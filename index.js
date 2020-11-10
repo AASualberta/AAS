@@ -1,6 +1,7 @@
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const {Builder, By, Key, until} = require('selenium-webdriver');
+
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
     .setChromeOptions(/* ... */)
@@ -8,9 +9,10 @@ var driver = new webdriver.Builder()
 
 var timeouts;
 var first = 0;
-var num = 3;
+var num = 3; // number of sounds in personalized sound library.
+var timer = 10000; // Each sound is played up to 10 seconds.
 
-
+// initialize the server
 init();
 
 // keyboard listening
@@ -19,16 +21,19 @@ readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 process.stdin.on('keypress', async function(str, key){
     if (key && key.ctrl && key.name=='c') {
+        // Exiting by pressing CTRL+'c'
         console.log('exiting...');
         driver.quit().then((e)=>{
             process.exit();
         });
     }
     else if (key.name == 'return') {
+        // Start the server by pressing 'ENTER'.
         console.log('Started');
         timeout();        
     }
     else if (key.name == 'n') {
+        // Switch soundscape manually by pressing 'n'.
         console.log('n pressed');
         clearTimeout(timeouts);
         timeout();
@@ -36,7 +41,11 @@ process.stdin.on('keypress', async function(str, key){
 
 });
 
+
 function timeout() {
+    /*
+        Call playNext() every 10 seconds.
+    */
     if (first == 0) {
         startFirstSound();
         first += 1;
@@ -47,15 +56,22 @@ function timeout() {
     
     timeouts = setTimeout(function () {
         timeout();
-    }, 10000);
+    }, timer);
 }
 
+
 function select(){
+    /*
+        Select the next soundscape.
+    */
     //return index
-    return Math.floor(Math.random()*num); 
+    return Math.floor(Math.random()*num); // randomly generated.
 }
 
 function startFirstSound(){
+    /*
+        Play the first soundscape.
+    */
     driver.findElement(By.css('body')).then((el)=>{
         el.sendKeys(Key.chord("m")).then((a)=>{
             console.log("unmute...");
@@ -64,7 +80,12 @@ function startFirstSound(){
 }
 
 function playNext(){
-    
+    /*
+        1. Mute currently playing soundscape.
+        2. Select the next soundscape by calling select().
+        3. Switch the window to the next tab.
+        4. Unmute the soundscape.
+    */   
     driver.findElement(By.css('body')).then((el)=>{
         // mute currently playing soundscape
         el.sendKeys(Key.chord("m")).then(async function(a) {
@@ -73,7 +94,6 @@ function playNext(){
             let ind = select();
             // switch tab
             var windows = await driver.getAllWindowHandles().then((value)=>{return value});
-            
             await driver.switchTo().window(windows[ind+1]);
 
             await driver.findElement(By.css('body')).then(async function(el){
@@ -92,13 +112,20 @@ function playNext(){
 }
 
 async function init(){
+    /*
+        1. Initialize the chromedriver.
+        2. Find all listed sound categories.
+        3. Select a part of categories.
+        4. Initialize the browser and all tabs, load all sounds.
+    */
     SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
     var allSounds = [];
-
+    // Initialize the driver.
     driver.get(SELENIUM_REMOTE_URL);
 
+    // Look for all sound categories. 
+    // Sound categories are stored in parameter 'allSounds'.
     var elems = await driver.findElements(By.css('span.DIM'));
-
     for (var i = 0; i < elems.length; i++) {
         let comb = [];
         await elems[i].getAttribute("class").then(function(value){
@@ -111,14 +138,22 @@ async function init(){
         });
         allSounds.push(comb);
     }
+
+    // Select sounds.
     var lib = getLibrary(allSounds);
+
+    //Open all tabs and wait until all sounds are loaded.
     openTabs(lib);
 }
 
 function getLibrary(allSounds){
+    /*
+        Select a subset of sound categories.
+    */
     let ret = [];
     let count = 0;
     for (var i = 0; i < allSounds.length; i++) {
+        // Sounds are randomly selected.
         if (Math.random() > 0.5 && count < num) {
             ret.push(allSounds[i]);
             count += 1;
@@ -128,11 +163,23 @@ function getLibrary(allSounds){
 }
 
 async function openTabs(lib){
+    /*
+        1. Open all tabs.
+        2. Switch the chromedriver to each tab for loading sounds.
+        3. For each tab, 
+            if the autoplay of audiocontext is disabled:
+                a. Wait until the 'play' button is displayed in 'div.contextPlay'.
+                b. Click the 'play' button to enable the audiocontext.
+                c. Send key 'm' to mute the sound.
+            if the autoplay of audiocontext is enabled:
+                a. Wait until the 'mute' button is pointer-interactive.
+                b. Send key 'm' to mute the sound.
+    */
     for (var i = 0; i < lib.length; i++) {
         await driver.executeScript("window.open('"+lib[i][1]+"', '"+i+"');", );
     }
     var windows = await driver.getAllWindowHandles();
-    console.log(windows);
+    //console.log(windows);
     for (var i = 0; i < windows.length-1; i++) {
         await driver.switchTo().window(windows[i+1]);
         let processed = false;
@@ -164,13 +211,15 @@ async function openTabs(lib){
 
                 await driver.findElement(By.css('body')).then(async function(bd){
                     await bd.sendKeys(Key.chord("m")).then((a)=>{
-                        console.log(windows[i+1]+" initialized");
+                        console.log("loading..."+((i+1)/num).toFixed(2)*100+"%.");
                     }).catch((e)=>{console.error(e.message);});
                 }).catch((e)=>{console.error(e.message);});
             }
         });  
     }
     console.log("Press ENTER to start.");
+    console.log("Press 'n' to switch soundscape manually.")
+    console.log("Press CTRL+'c' to exit the program.")
 
 }
 
