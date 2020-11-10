@@ -1,0 +1,24 @@
+{
+  "name": "aas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YouruiGuo/AAS.git"
+  },
+  "author": "Yourui Guo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YouruiGuo/AAS/issues"
+  },
+  "homepage": "https://github.com/YouruiGuo/AAS#readme",
+  "dependencies": {
+    "readline": "^1.3.0",
+    "selenium-webdriver": "^4.0.0-alpha.7",
+    "tty": "^1.0.1"
+  }
+}
