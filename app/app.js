@@ -11,6 +11,9 @@ const app = module.exports = new Koa();
 const router = koaRouter();
 const seleniumtest = new SeleniumTest();
 
+const server = require('http').createServer(app.callback());
+const io = require('socket.io')(server);
+
 render(app, {
   root: path.join(__dirname, 'view'),
   layout: 'template',
@@ -25,11 +28,6 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
-let port = 3000;
-app.listen(port, () => console.log(`the server is running at ${port}`));
-
-
-
 //router.post('/switch', buttonControllers.switch);
 //router.post('/switch', buttonController.switch);
 //router.post('/switch', buttonController.switch);
@@ -42,24 +40,51 @@ router.get('/', async (ctx, next) => {
 
 //console.log(seleniumtest);
 
-router.post('/test', test)
+router.post('/next', next)
 router.post('/start', start)
 router.post('/stop', stop)
 
 async function start(ctx){
 	ctx.redirect('back');
-	seleniumtest.operate(1);
+  console.log(seleniumtest)
+  seleniumtest.then((e)=>{
+
+    e.operate(1);
+  });
 	console.log("start")
 }
 
-async function test(ctx){
+async function next(ctx){
 	ctx.redirect('back');
-	seleniumtest.operate(2);
+  seleniumtest.then((e)=>{
+    e.operate(2);
+  });
 }
 
 async function stop(ctx){
 	ctx.redirect('back');
-	seleniumtest.operate(3);
+  seleniumtest.then((e)=>{
+    e.operate(3);
+  });
 }
 
+io.on('connection', async (socket) => {
+  console.log(seleniumtest);
+    await seleniumtest.then(()=>{
+      console.log("connected")
+      socket.emit("init", "world");
+    })
+    socket.on('msg', (msg) => {
+        console.log('message: '+msg);
+        io.emit('msg', msg);
+    });
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
+});
+
+
+server.listen(3000, () => {
+    console.log('listening on *:3000');
+});
 module.exports = app;
