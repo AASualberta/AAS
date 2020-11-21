@@ -14,7 +14,6 @@ cd AAS
 ```shell
 chmod u+x script.sh
 ./script.sh
-npm install
 ```
 
 * Start the program:
@@ -22,3 +21,9 @@ npm install
 node index.js
 ```
 * Open another browser window, and go to [localhost:3000](http://localhost:3000/)
+
+* Uninstall all dependencies:
+```shell
+chmod u+x script.sh
+./script.sh
+```
