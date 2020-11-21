@@ -24,6 +24,6 @@ node index.js
 
 * Uninstall all dependencies:
 ```shell
-chmod u+x script.sh
-./script.sh
+chmod u+x uninstall_script.sh
+./uninstall_script.sh
 ```
