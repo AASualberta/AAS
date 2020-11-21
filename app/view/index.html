@@ -9,45 +9,36 @@
 
   const socket = io();
   socket.on('init', function(msg){
+    document.getElementById("h").innerHTML = "loaded";
     document.getElementById("start").disabled = false;
     document.getElementById("next").disabled = false;
     document.getElementById("stop").disabled = false;
   });
-  socket.on('msg', function(msg){
-    //alert("msg")
+
+  socket.on('next', function(msg){
+    document.getElementById("h").innerHTML = "Playing";
     document.getElementById("msg").innerHTML = msg;
-      //$('#msg').append($('<li>').text(msg));
-  });
+  })
+
 
   const startbutton = document.getElementById("start")
   const nextbutton = document.getElementById("next")
   const stopbutton = document.getElementById("stop")
 
   startbutton.addEventListener('click', function() {
-    console.log("start")
-    fetch('/start', {method: 'POST'})
-      .then(response => response.text())
-      .then(text => {
-        //document.getElementById('msg').innerHTML = text;
-      })
+    startbutton.disabled = true;
+    socket.emit("startsocket", null);
+
   })
 
 
   nextbutton.addEventListener('click', function() {
-    fetch('/next', {method: 'POST'})
-      .then(response => response.text())
-      .then(text => {
-        document.getElementById('msg').innerHTML = text;
-      })
+    socket.emit("nextsocket", null);
   })
 
 
   stopbutton.addEventListener('click', function() {
-    fetch('/stop', {method: 'POST'})
-      .then(response => response.text())
-      .then(text => {
-        document.getElementById('msg').innerHTML = text;
-      })
+    socket.emit("stopsocket", null);
   })
 
 </script>

@@ -13,84 +13,23 @@ const num = 3;
 class SeleniumTest{
 
     constructor(){
-      return (async () =>{
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
         this.timer = 10000; // Each sound is played up to 10 seconds.
         this.msg = null;
-        await this.init();
-      })();
-
+        //await this.init();
     }
 
 
-// initialize the server
-//init();
-/*
-// keyboard listening
-const readline = require('readline');
-readline.emitKeypressEvents(process.stdin);
-process.stdin.setRawMode(true);
-process.stdin.on('keypress', async function(str, key){
-    if (key && key.ctrl && key.name=='c') {
-        // Exiting by pressing CTRL+'c'
-        console.log('exiting...');
-        driver.quit().then((e)=>{
-            process.exit();
-        });
-    }
-    else if (key.name == 'return') {
-        // Start the server by pressing 'ENTER'.
-        console.log('Started');
-        timeout();
-    }
-    else if (key.name == 'n') {
-        // Switch soundscape manually by pressing 'n'.
-        console.log('n pressed');
-        clearTimeout(timeouts);
-        timeout();
-    }
-
-});*/
-
-operate(op){
+close(){
     var self = this;
-    if(op == 1){
-        console.log('Started');
-        self.timeout();
-    }
-    if(op == 2){
-        console.log('next');
-        clearTimeout(this.timeouts);
-        self.timeout();
-    }
-    if(op == 3){
-        console.log('exiting...');
-        driver.quit().then((e)=>{
-            process.exit();
-        });
-    }
+    console.log('exiting...');
+    driver.quit().then((e)=>{
+        process.exit();
+    });
 }
 
-
-timeout() {
-    /*
-        Call playNext() every 10 seconds.
-    */
-    var self = this;
-    if (this.first == 0) {
-        this.startFirstSound();
-        this.first += 1;
-    }
-    else{
-        this.playNext();
-    }
-
-    this.timeouts = setTimeout(function () {
-        self.timeout();
-    }, this.timer);
-}
 
 
 select(){
@@ -105,14 +44,16 @@ startFirstSound(){
     /*
         Play the first soundscape.
     */
+    var self = this;
     driver.findElement(By.css('body')).then((el)=>{
         el.sendKeys(Key.chord("m")).then((a)=>{
             console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
     }).catch((e) => { console.error(e.message) });
+
 }
 
-playNext(){
+async playNext(){
     /*
         1. Mute currently playing soundscape.
         2. Select the next soundscape by calling select().
@@ -120,9 +61,9 @@ playNext(){
         4. Unmute the soundscape.
     */
     var self = this;
-    driver.findElement(By.css('body')).then((el)=>{
+    var msg = driver.findElement(By.css('body')).then((el)=>{
         // mute currently playing soundscape
-        el.sendKeys(Key.chord("m")).then(async function(a) {
+        return el.sendKeys(Key.chord("m")).then(async function(a) {
             //console.log("mute...");
             // determine the next soundscape
             let ind = self.select();
@@ -130,19 +71,22 @@ playNext(){
             var windows = await driver.getAllWindowHandles().then((value)=>{return value});
             await driver.switchTo().window(windows[ind+1]);
             await self.sleep(1000);
-            await driver.findElement(By.css('body')).then(async function(el){
+            var m = await driver.findElement(By.css('body')).then(async function(el){
                 // unmute next soundscape
                 await el.sendKeys(Key.chord("m")).then((a)=>{
                     //console.log("unmute...");
                 });
-                await driver.findElement(By.css('div.bigTitle')).then(async function (el){
-                    await el.getText().then((value)=>{
+                return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
+                   return await el.getText().then((value)=>{
                         console.log("Switched to "+value);
+                        return value;
                     });
                 });
             });
+            return m;
         });
     });
+    return msg;
 }
 
 sleep(ms) {

@@ -18,6 +18,7 @@
   "homepage": "https://github.com/YouruiGuo/AAS#readme",
   "dependencies": {
     "axios": "^0.21.0",
+    "json": "^10.0.0",
     "koa": "^2.13.0",
     "koa-body": "^4.2.0",
     "koa-ejs": "^4.3.0",
