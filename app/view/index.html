@@ -11,7 +11,6 @@
   socket.on('init', function(msg){
     document.getElementById("h").innerHTML = "loaded";
     document.getElementById("start").disabled = false;
-    document.getElementById("next").disabled = false;
     document.getElementById("stop").disabled = false;
   });
 
@@ -27,6 +26,7 @@
 
   startbutton.addEventListener('click', function() {
     startbutton.disabled = true;
+    nextbutton.disabled = false;
     socket.emit("startsocket", null);
 
   })
