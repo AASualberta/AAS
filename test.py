@@ -8,6 +8,8 @@ pip3 install opencv-python
 Run the program:
 python3 test.py
 
+Exit the program:
+Press q
 '''
 
 import cv2, time
