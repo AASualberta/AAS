@@ -17,4 +17,5 @@ if which node > /dev/null
         echo "not installed"
         brew install node
     fi
+npm install
 npm -g install chromedriver
