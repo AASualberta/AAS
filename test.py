@@ -2,7 +2,7 @@
 Code source: https://github.com/thearn/webcam-pulse-detector
 
 Prerequisite:
-install python
+brew install python
 pip3 install opencv-python
 
 Run the program:
