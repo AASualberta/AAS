@@ -1,12 +1,3 @@
-if which brew > /dev/null; then
-  # The package is installed
-  echo "brew installed"
-  brew update
-else
-  # The package is not installed
-  echo "brew not installed"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-fi
 
 if which node > /dev/null
     then
@@ -15,7 +6,7 @@ if which node > /dev/null
         # add deb.nodesource repo commands
         # install node
         echo "not installed"
-        brew install node
+        curl "https://nodejs.org/dist/latest/node-${VERSION:-$(wget -qO- https://nodejs.org/dist/latest/ | sed -nE 's|.*>node-(.*)\.pkg</a>.*|\1|p')}.pkg" > "$HOME/Downloads/node-latest.pkg" && sudo installer -store -pkg "$HOME/Downloads/node-latest.pkg" -target "/"
     fi
 npm install
 npm -g install chromedriver
