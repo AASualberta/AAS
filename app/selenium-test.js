@@ -46,8 +46,8 @@ startFirstSound(){
     */
     var self = this;
     driver.findElement(By.css('body')).then((el)=>{
-        el.sendKeys(Key.chord("m")).then((a)=>{
-            console.log("unmute...");
+        el.sendKeys(Key.chord("p")).then((a)=>{
+            //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
     }).catch((e) => { console.error(e.message) });
 
@@ -63,7 +63,7 @@ async playNext(){
     var self = this;
     var msg = driver.findElement(By.css('body')).then((el)=>{
         // mute currently playing soundscape
-        return el.sendKeys(Key.chord("m")).then(async function(a) {
+        return el.sendKeys(Key.chord("p")).then(async function(a) {
             //console.log("mute...");
             // determine the next soundscape
             let ind = self.select();
@@ -73,12 +73,13 @@ async playNext(){
             await self.sleep(1000);
             var m = await driver.findElement(By.css('body')).then(async function(el){
                 // unmute next soundscape
-                await el.sendKeys(Key.chord("m")).then((a)=>{
+                await el.sendKeys(Key.chord("p")).then((a)=>{
                     //console.log("unmute...");
                 });
                 return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
                    return await el.getText().then((value)=>{
                         console.log("Switched to "+value);
+                        el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         return value;
                     });
                 });
@@ -175,13 +176,13 @@ async openTabs(lib){
             return driver.findElement(By.id('mute')).then((elem1)=>{
                 return elem1.getAttribute("class").then(async function(classes){
                     if (classes.indexOf('active') < 0 && classes.indexOf('disabled') < 0 && !processed) {
-                        elem1.getDriver().getWindowHandle().then((va)=>{console.log(va);});
+                        /*elem1.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         await driver.findElement(By.css('body')).then(async function (el){
                             // mute next soundscape
-                            await el.sendKeys(Key.chord("m")).then((a)=>{
-                                //console.log("mute...initialized");
+                            await el.sendKeys(Key.chord("p")).then((a)=>{
+                                console.log("mute...initialized");
                             });
-                        }).catch((e)=>{console.error(e.message);});
+                        }).catch((e)=>{console.error(e.message);});*/
                         return elem1;
                     }
                 });
@@ -189,17 +190,19 @@ async openTabs(lib){
         }, 100000);
         await Promise.race([p1, p2]).then(async function(ele) {
             processed = true;
-            let value = await ele.getId().then((value)=>{return value});
-            if (value !== 'mute') {
-                await driver.findElement(By.css('div.contextPlay')).click()
-                                .then((e)=>{}).catch((e)=>{console.error(e.message);});
-
-                await driver.findElement(By.css('body')).then(async function(bd){
-                    await bd.sendKeys(Key.chord("m")).then((a)=>{
-                        console.log("loading..."+((i+1)/num).toFixed(2)*100+"%.");
-                    }).catch((e)=>{console.error(e.message);});
-                }).catch((e)=>{console.error(e.message);});
+            let value = await ele.getAttribute("class").then((value)=>{return value});
+            console.log(value);
+            if (value == 'contextPlay') {
+                await ele.click().then((e)=>{console.log("clicked")}).catch((e)=>{console.error(e.message);});
             }
+            ele.getDriver().getWindowHandle().then((va)=>{console.log(va);});
+            await driver.findElement(By.css('body')).then(async function(bd){
+                //driver.getTitle().then((e)=>console.log(e))
+                await bd.sendKeys(Key.chord("p")).then((a)=>{
+                    console.log("loading..."+((i+1)/num).toFixed(2)*100+"%.");
+                }).catch((e)=>{console.error(e.message);});
+            }).catch((e)=>{console.error(e.message);});
+            
         });
     }
     //this.msg = "Press ENTER to start.\nPress 'n' to switch soundscape manually.\nPress CTRL+'c' to exit the program."

@@ -39,6 +39,7 @@
 
   stopbutton.addEventListener('click', function() {
     socket.emit("stopsocket", null);
+    socket.close();
   })
 
 </script>
