@@ -1,4 +1,12 @@
-<div>
+<div id="beforestart">
+  <form id="form">
+    <label for="restbpm">Resting heart rate:</label>
+    <input type="text" id="restbpm" name="restbpm"><br><br>
+  </form>
+  <button id="formbutton" type="button"> submit</button>
+</div>
+<div id="started" style="display:none;">
+  <h3 id="h">Loading...</h3>
   <p id="msg"></p>
   <button id="start" type="button" class="btn btn-danger" disabled>start</button>
   <button id="next" type="button" class="btn btn-danger" disabled>switch next</button>
@@ -6,12 +14,14 @@
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript">
-
+  
+  var bpm;
   const socket = io();
   socket.on('init', function(msg){
     document.getElementById("h").innerHTML = "loaded";
     document.getElementById("start").disabled = false;
     document.getElementById("stop").disabled = false;
+    socket.emit("restbpm", bpm);
   });
 
   socket.on('next', function(msg){
@@ -23,6 +33,7 @@
   const startbutton = document.getElementById("start")
   const nextbutton = document.getElementById("next")
   const stopbutton = document.getElementById("stop")
+  const formbutton = document.getElementById("formbutton")
 
   startbutton.addEventListener('click', function() {
     startbutton.disabled = true;
@@ -40,6 +51,19 @@
   stopbutton.addEventListener('click', function() {
     socket.emit("stopsocket", null);
     socket.close();
+  })
+
+  formbutton.addEventListener('click', function(){
+    var x = document.getElementById("form");
+    
+    var i;
+    for (i = 0; i < x.length ;i++) {
+      bpm = x.elements[i].value;
+    }
+    document.getElementById("beforestart").style.display = "none";
+    document.getElementById("started").style.display = "block";
+    //document.getElementById("msg").innerHTML = bpm;
+    
   })
 
 </script>

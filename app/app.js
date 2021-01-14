@@ -14,6 +14,7 @@ const seleniumtest = new SeleniumTest();
 
 const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
+var bpm_connected = false;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -34,7 +35,17 @@ router.get('/', async (ctx, next) => {
   await ctx.render('index');
 });
 
+router.post('/test', async (ctx, next) =>{
+  if (ctx.request.body["bpm"] > 0) {
+    seleniumtest.addBPM(ctx.request.body["bpm"]);
+  }
+});
 
+
+async function restbpm(arg){
+  //console.log(arg);
+  seleniumtest.restBPM(arg);
+}
 
 async function stop(){
   console.log('exiting...');
@@ -45,16 +56,20 @@ async function stop(){
 io.on('connection', async (socket) => {
   console.log(seleniumtest);
     await seleniumtest.init().then(()=>{
-      console.log("connected")
-      socket.emit("init", "world");
+      router.post('/first', async (ctx, next) =>{
+        console.log("connected");
+        socket.emit("init", "world");
+      });
     })
     socket.on("startsocket", async (arg) => {
-      seleniumtest.startFirstSound();
-      timeout();
+      await seleniumtest.startFirstSound().then((e)=>{
+        socket.emit("next", e);
+      });
+      timeout(1);
     });
     socket.on("nextsocket", async (arg) => {
       clearTimeout(seleniumtest.timeouts);
-      timeout();
+      timeout(0);
     });
     socket.on("stopsocket", async (arg) => {
       stop();
@@ -62,17 +77,22 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });
+    socket.on('restbpm', async (arg)=>{
+      restbpm(arg);
+    })
 
-    function timeout() {
+    function timeout(first) {
         /*
             Call playNext() every 10 seconds.
         */
-        var msg = seleniumtest.playNext();
-        msg.then((e)=>{
-            socket.emit("next", e);
-        })
+        if(!first){
+            var msg = seleniumtest.playNext();
+            msg.then((e)=>{
+                socket.emit("next", e);
+            })
+        }
         seleniumtest.timeouts = setTimeout(function () {
-            timeout();
+            timeout(0);
         }, seleniumtest.timer);
     }
 

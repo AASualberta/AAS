@@ -1,23 +1,27 @@
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const {Builder, By, Key, until, Capabilities} = require('selenium-webdriver');
+const Algorithm = require('./alg.js')
+
+
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
     .setChromeOptions()
     .build();
 
-driver.manage().window().setRect({height:10, width:10, x:0, y:0});
+driver.manage().window().setRect({height:5, width:5, x:0, y:0});
 
 const num = 3;
-
+const alg = new Algorithm(num);
 class SeleniumTest{
 
     constructor(){
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
-        this.timer = 10000; // Each sound is played up to 10 seconds.
+        this.timer = 60000; // Each sound is played up to 10 seconds.
         this.msg = null;
+        this.bpms = [];
         //await this.init();
     }
 
@@ -30,27 +34,46 @@ close(){
     });
 }
 
+addBPM(bpm){
+    this.bpms.push(bpm);
+}
 
+restBPM(restbpm){
+    alg.setRestBPM(restbpm);
+}
 
 select(){
     /*
         Select the next soundscape.
     */
     //return index
-    return Math.floor(Math.random()*num); // randomly generated.
+    var sum = 0;
+    for (var i = this.bpms.length - 1; i >= 0; i--) {
+        sum += parseFloat(this.bpms[i]);
+    }
+    var avg = sum / this.bpms.length
+    console.log("average", avg);
+    var idx = alg.generateNext(avg); //generate reward from averaged bpm
+    this.bpms = [];
+    return idx; // randomly generated.
 }
 
-startFirstSound(){
+async startFirstSound(){
     /*
         Play the first soundscape.
     */
     var self = this;
-    driver.findElement(By.css('body')).then((el)=>{
+    var msg = driver.findElement(By.css('body')).then(async (el)=>{
         el.sendKeys(Key.chord("p")).then((a)=>{
             //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
+        return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
+            return await ele.getText().then((e)=>{
+                return e;
+            });
+        });
     }).catch((e) => { console.error(e.message) });
-
+    return msg; 
 }
 
 async playNext(){
@@ -70,7 +93,7 @@ async playNext(){
             // switch tab
             var windows = await driver.getAllWindowHandles().then((value)=>{return value});
             await driver.switchTo().window(windows[ind+1]);
-            await self.sleep(1000);
+            //await self.sleep(1000);
             var m = await driver.findElement(By.css('body')).then(async function(el){
                 // unmute next soundscape
                 await el.sendKeys(Key.chord("p")).then((a)=>{

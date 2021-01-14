@@ -14,7 +14,7 @@ Press q
 
 import cv2, time
 import numpy as np
-
+import requests
 
 def get_subface_coord(face_rect,fh_x, fh_y, fh_w, fh_h):
     x, y, w, h = face_rect
@@ -30,18 +30,19 @@ def get_subface_means(coord, frame):
     v2 = np.mean(subframe[:, :, 1])
     v3 = np.mean(subframe[:, :, 2])
 
-    #return (v1 + v2 + v3) / 3.
-    return v2 # return the mean of green channel
+    return (v1 + v2 + v3) / 3.
+    #return v2 # return the mean of green channel
 
 cap = cv2.VideoCapture(0)
 faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_alt.xml')
 dataBuffer = []
-bufferSize = 150
+bufferSize = 250
 t0 = time.time()
 times = []
-
+count = 0
+first = True
 while(True):
-    times.append(time.time() - t0)
+    
     # Capture frame-by-frame
     ret, frame = cap.read()
 
@@ -55,11 +56,9 @@ while(True):
         minSize=(30, 30),
         flags=cv2.CASCADE_SCALE_IMAGE
     ))
-
     # Draw a rectangle around the faces
     if len(faces) > 0:
-
-
+        times.append(time.time() - t0)
         face = x,y,w,h = faces[0]
         forehead = fx,fy,fw,fh = get_subface_coord(face, 0.5, 0.18, 0.25, 0.15)
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 1) # face
@@ -80,6 +79,7 @@ while(True):
         #print(samples)
 
         if L >= bufferSize:
+            count += 1
             fps = float(L) / (times[-1] - times[0])
             even_times = np.linspace(times[0], times[-1], L)
             interpolated = np.interp(even_times, times, samples)
@@ -96,15 +96,22 @@ while(True):
             freqs = float(fps) / L * np.arange(L // 2 + 1)
             freqs = 60. * freqs
             #print(freqs)
-            idx = np.where((freqs > 45) & (freqs < 180))
+            idx = np.where((freqs > 50) & (freqs < 180))
             #print(fft, freqs)
             fft = fft[idx]
             phase = phase[idx]
             freqs = freqs[idx]
             idx2 = np.argmax(fft)
             bpm = freqs[idx2]
-
-
+            d = {"bpm": bpm}
+            if first:
+                r = requests.post('http://127.0.0.1:3000/first', data=d)
+                first = False
+            if count >= fps:
+                #print(bpm)
+                d = {"bpm": bpm}
+                r = requests.post('http://127.0.0.1:3000/test', data=d)
+                count = 0
             text = "(estimate: %0.1f bpm)" % (bpm)
             cv2.putText(frame, text,
                            (int(x - w / 2), int(y)), cv2.FONT_HERSHEY_PLAIN, 1, (100, 255, 100))
