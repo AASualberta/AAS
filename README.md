@@ -8,7 +8,8 @@ The program is able to run offline when it is initialized successfully.
 * start the program:
 ```shell
 npm install
-node index.js
+chmod u+x start.sh
+./start.sh
 ```
 * Open another browser window, and go to [localhost:3000](http://localhost:3000/)
 ---
@@ -27,7 +28,9 @@ chmod u+x script.sh
 
 * Start the program:
 ```shell
-node index.js
+npm install
+chmod u+x start.sh
+./start.sh
 ```
 * Open another browser window, and go to [localhost:3000](http://localhost:3000/)
 
