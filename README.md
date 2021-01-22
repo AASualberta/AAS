@@ -23,7 +23,7 @@ cd AAS
 * Install dependencies. You may need to enter password for downloading dependencies.
 ```shell
 chmod u+x script.sh
-./script.sh
+sudo ./script.sh
 ```
 
 * Start the program:
