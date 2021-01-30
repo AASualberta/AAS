@@ -2,6 +2,7 @@
 const http = require('http');
 const path = require('path');
 const Koa = require('koa');
+var serve = require('koa-static');
 const koaRouter = require('koa-router');
 const koaBody = require('koa-body');
 const render = require('koa-ejs');
@@ -23,7 +24,7 @@ render(app, {
   cache: false,
   debug: false
 });
-
+app.use(serve('./public'));
 app.use(koaBody());// for parsing koa ctx.request body
 
 app
