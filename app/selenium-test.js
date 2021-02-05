@@ -3,13 +3,15 @@ const chrome = require('selenium-webdriver/chrome');
 const {Builder, By, Key, until, Capabilities} = require('selenium-webdriver');
 const Algorithm = require('./alg.js')
 
-
+var options = new chrome.Options()
+options.addArguments("--autoplay-policy=no-user-gesture-required")
+options.windowSize({height:5, width:5, x:0, y:0});
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
-    .setChromeOptions()
+    .setChromeOptions(options)
     .build();
 
-driver.manage().window().setRect({height:5, width:5, x:0, y:0});
+//driver.manage().window().setRect({height:5, width:5, x:0, y:0});
 
 const num = 3;
 const alg = new Algorithm(num);
@@ -194,24 +196,37 @@ async openTabs(lib){
         let processed = false;
         //console.log(i,windows[i+1]);
         //driver.getWindowHandle().then((va)=>{console.log(va);});
-        var p1 = driver.wait(until.elementIsVisible(driver.findElement(By.css('div.contextPlay'))), 100000);
-        var p2 = driver.wait(function(){
+        //var p1 = driver.wait(until.elementIsVisible(driver.findElement(By.css('div.contextPla'))), 100000);
+        /*var p2 = driver.wait(function(){
             return driver.findElement(By.id('mute')).then((elem1)=>{
                 return elem1.getAttribute("class").then(async function(classes){
                     if (classes.indexOf('active') < 0 && classes.indexOf('disabled') < 0 && !processed) {
-                        /*elem1.getDriver().getWindowHandle().then((va)=>{console.log(va);});
-                        await driver.findElement(By.css('body')).then(async function (el){
-                            // mute next soundscape
-                            await el.sendKeys(Key.chord("p")).then((a)=>{
-                                console.log("mute...initialized");
-                            });
-                        }).catch((e)=>{console.error(e.message);});*/
+                        
                         return elem1;
                     }
                 });
             })
-        }, 100000);
-        await Promise.race([p1, p2]).then(async function(ele) {
+        }, 100000);*/
+        var p2 = driver.wait(until.elementTextContains(driver.findElement(By.id('msg')),'Playing'),100000);
+        await p2.then(async function(ele){
+            processed = true;
+            let value = await ele.getAttribute("class").then((value)=>{return value});
+            console.log(value);
+            /*
+            if (value == 'contextPlay') {
+                await ele.click().then((e)=>{console.log("clicked")}).catch((e)=>{console.error(e.message);});
+            }*/
+            ele.getDriver().getWindowHandle().then((va)=>{console.log(va);});
+            await driver.findElement(By.css('body')).then(async function(bd){
+                //driver.getTitle().then((e)=>console.log(e))
+                await bd.sendKeys(Key.chord("p")).then((a)=>{
+                    console.log("loading..."+((i+1)/num).toFixed(2)*100+"%.");
+                }).catch((e)=>{console.error(e.message);});
+            }).catch((e)=>{console.error(e.message);});
+            
+        });
+        /*
+        await Promise.any([p1, p2]).then(async function(ele) {
             processed = true;
             let value = await ele.getAttribute("class").then((value)=>{return value});
             console.log(value);
@@ -226,7 +241,7 @@ async openTabs(lib){
                 }).catch((e)=>{console.error(e.message);});
             }).catch((e)=>{console.error(e.message);});
             
-        });
+        });*/
     }
     //this.msg = "Press ENTER to start.\nPress 'n' to switch soundscape manually.\nPress CTRL+'c' to exit the program."
 
