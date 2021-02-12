@@ -35,12 +35,13 @@ router.get('/', async (ctx, next) => {
   //console.log(ctx.request.body);
   await ctx.render('index');
 });
-
+/*
 router.post('/test', async (ctx, next) =>{
   if (ctx.request.body["bpm"] > 0) {
     seleniumtest.addBPM(ctx.request.body["bpm"]);
   }
 });
+*/
 
 
 async function restbpm(arg){
@@ -57,9 +58,17 @@ async function stop(){
 io.on('connection', async (socket) => {
   console.log(seleniumtest);
     await seleniumtest.init().then(()=>{
-      router.post('/first', async (ctx, next) =>{
-        console.log("connected");
-        socket.emit("init", "world");
+      router.post('/test', async (ctx, next) =>{
+        if (!bpm_connected){
+          console.log("connected");
+          socket.emit("init", "world");
+          bpm_connected = true;
+        }
+        else{
+          if (ctx.request.body["bpm"] > 0) {
+            seleniumtest.addBPM(ctx.request.body["bpm"]);
+          }
+        }
       });
     })
     socket.on("startsocket", async (arg) => {

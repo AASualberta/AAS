@@ -105,7 +105,7 @@ while(True):
             bpm = freqs[idx2]
             d = {"bpm": bpm}
             if first:
-                r = requests.post('http://127.0.0.1:3000/first', data=d)
+                r = requests.post('http://127.0.0.1:3000/test', data=d)
                 first = False
             if count >= fps:
                 #print(bpm)
