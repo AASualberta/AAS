@@ -23,24 +23,28 @@ class SeleniumTest{
 //        this.num = 3; // number of sounds in personalized sound library.
         this.timer = 60000; // Each sound is played up to 10 seconds.
         this.msg = null;
+        this.select_msg = null;
         this.bpms = [];
+        this.avg_bpm = 0;
         //await this.init();
     }
 
 
 close(){
     var self = this;
-    console.log('exiting...');
+    //console.log('exiting...');
     driver.quit().then((e)=>{
         process.exit();
     });
 }
 
 addBPM(bpm){
+    //console.log(this.bpms)
     this.bpms.push(bpm);
 }
 
 restBPM(restbpm){
+    console.log("resting heart rate:", restbpm);
     alg.setRestBPM(restbpm);
 }
 
@@ -54,8 +58,10 @@ select(){
         sum += parseFloat(this.bpms[i]);
     }
     var avg = sum / this.bpms.length
-    console.log("average", avg);
+    //console.log(Date.now(),"average", avg);
+    this.avg_bpm = avg;
     var idx = alg.generateNext(avg); //generate reward from averaged bpm
+    this.select_msg = alg.getMessage();
     this.bpms = [];
     return idx; // randomly generated.
 }
@@ -75,7 +81,14 @@ async startFirstSound(){
             });
         });
     }).catch((e) => { console.error(e.message) });
-    return msg; 
+    var sum = 0;
+    for (var i = self.bpms.length - 1; i >= 0; i--) {
+        sum += parseFloat(self.bpms[i]);
+    }
+    self.avg_bpm = sum / self.bpms.length
+    return msg.then((e)=>{
+        return [e,"; soundscape: "+ e + "; heart_rate: " + self.avg_bpm.toString()]
+    })
 }
 
 async playNext(){
@@ -103,8 +116,8 @@ async playNext(){
                 });
                 return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
                    return await el.getText().then((value)=>{
-                        console.log("Switched to "+value);
-                        el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
+                        //console.log("Switched to "+value);
+                        //el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         return value;
                     });
                 });
@@ -112,7 +125,9 @@ async playNext(){
             return m;
         });
     });
-    return msg;
+    return msg.then((e)=>{
+        return [e,"; soundscape: "+e + "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+    })
 }
 
 sleep(ms) {
@@ -211,12 +226,12 @@ async openTabs(lib){
         await p2.then(async function(ele){
             processed = true;
             let value = await ele.getAttribute("class").then((value)=>{return value});
-            console.log(value);
+            //console.log(value);
             /*
             if (value == 'contextPlay') {
                 await ele.click().then((e)=>{console.log("clicked")}).catch((e)=>{console.error(e.message);});
             }*/
-            ele.getDriver().getWindowHandle().then((va)=>{console.log(va);});
+            ele.getDriver().getWindowHandle().then((va)=>{});
             await driver.findElement(By.css('body')).then(async function(bd){
                 //driver.getTitle().then((e)=>console.log(e))
                 await bd.sendKeys(Key.chord("p")).then((a)=>{

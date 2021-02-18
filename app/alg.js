@@ -29,18 +29,23 @@ class Algorithm{
 		this.current = this.num - 1;
 		this.learning_rate = 0.3;
 		this.epsilon = 0.1
+		this.msg = null
+	}
+	getMessage(){
+		return this.msg;
 	}
 	generateNext(d){
 		var rew = this.generateReward(d);
-		console.log("reward", rew);
+		//console.log("reward", rew);
 		this.updateState(rew);
 		var rand = Math.random();
-		console.log(this.sounds);
+		//console.log(this.sounds);
 		if (rand < this.epsilon)
 			this.current = Math.floor(Math.random() * this.num);
 		else
 			this.current = indexOfMax(this.sounds);
-		console.log(this.current);
+		//console.log(this.current);
+		this.msg = "; reward: "+rew.toString()+ "; value_function: "+this.sounds;
 		return this.current;
 	}
 

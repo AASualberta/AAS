@@ -2,10 +2,11 @@
   console.log("hello")
   var bpm;
   const socket = io();
-  socket.on('init', function(msg){
+  socket.on('init', function(msg){ 
     document.getElementById("h").innerHTML = "loaded";
     document.getElementById("start").disabled = false;
     document.getElementById("stop").disabled = false;
+    document.getElementById("switch").disabled = false;
     socket.emit("restbpm", bpm);
   });
 
@@ -19,6 +20,16 @@
   const nextbutton = document.getElementById("next")
   const stopbutton = document.getElementById("stop")
   const formbutton = document.getElementById("formbutton")
+  const switchbutton = document.getElementById("switch")
+
+  switchbutton.addEventListener('change', function(){
+    if (this.checked) {
+      document.getElementById("switchtext").innerHTML = "Training Mode";
+    }
+    else{
+      document.getElementById("switchtext").innerHTML = "Therapeutic Mode";
+    }
+  })
 
   startbutton.addEventListener('click', function() {
     startbutton.disabled = true;
