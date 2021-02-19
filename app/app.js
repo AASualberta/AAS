@@ -16,6 +16,7 @@ const seleniumtest = new SeleniumTest();
 const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
 var bpm_connected = false;
+var mode = 0; // default is training mode
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -89,8 +90,14 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', () => {
         //console.log("Timestamp: ", Date.now(),' user disconnected');
     });
-    socket.on('restbpm', async (arg)=>{
+    socket.on('restbpm', async (arg)=> {
       restbpm(arg);
+    })
+    socket.on("mode", async (arg) => {
+      mode = arg;
+    })
+    socket.on("pausesocket", async (arg) => {
+
     })
 
     function timeout(first, action) {
@@ -98,25 +105,26 @@ io.on('connection', async (socket) => {
             Call playNext() every 10 seconds.
         */
         if(!first){
-            var msg = seleniumtest.playNext();
+            var msg = seleniumtest.playNext(mode, action);
             msg.then((e)=>{
               var a = null;
               switch(action){
                 case 1:
                   a = "next_pressed";
                   break;
-                case 2:
+                case 0:
                   a = "switched";
                   break;
               }
-              console.log("Timestamp: ", Date.now(), "; Action: "+ a + e[1])
+              console.log("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1])
               socket.emit("next", e[0]);
             })
         }
         seleniumtest.timeouts = setTimeout(function () {
-            timeout(0, 2);
+            timeout(0, 0);
         }, seleniumtest.timer);
     }
+
 
 });
 
