@@ -32,5 +32,6 @@ if which python3 > /dev/null
 		echo "python3 is not installed"
 		brew install python3
 fi
+pip3 install numpy
 pip3 install requests
 pip3 install opencv-python

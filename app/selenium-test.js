@@ -38,6 +38,10 @@ close(){
     });
 }
 
+pause() {
+
+}
+
 addBPM(bpm){
     //console.log(this.bpms)
     this.bpms.push(bpm);
@@ -48,7 +52,7 @@ restBPM(restbpm){
     alg.setRestBPM(restbpm);
 }
 
-select(){
+select(mode, pressed){
     /*
         Select the next soundscape.
     */
@@ -60,7 +64,7 @@ select(){
     var avg = sum / this.bpms.length
     //console.log(Date.now(),"average", avg);
     this.avg_bpm = avg;
-    var idx = alg.generateNext(avg); //generate reward from averaged bpm
+    var idx = alg.generateNext(avg, mode, pressed); //generate reward from averaged bpm
     this.select_msg = alg.getMessage();
     this.bpms = [];
     return idx; // randomly generated.
@@ -87,11 +91,11 @@ async startFirstSound(){
     }
     self.avg_bpm = sum / self.bpms.length
     return msg.then((e)=>{
-        return [e,"; soundscape: "+ e + "; heart_rate: " + self.avg_bpm.toString()]
+        return [e,"; soundscape: "+ e + "; soundscape index: "+(num-1).toString()+ "; heart_rate: " + self.avg_bpm.toString()]
     })
 }
 
-async playNext(){
+async playNext(mode, pressed){
     /*
         1. Mute currently playing soundscape.
         2. Select the next soundscape by calling select().
@@ -104,7 +108,7 @@ async playNext(){
         return el.sendKeys(Key.chord("p")).then(async function(a) {
             //console.log("mute...");
             // determine the next soundscape
-            let ind = self.select();
+            let ind = self.select(mode, pressed);
             // switch tab
             var windows = await driver.getAllWindowHandles().then((value)=>{return value});
             await driver.switchTo().window(windows[ind+1]);
@@ -122,11 +126,11 @@ async playNext(){
                     });
                 });
             });
-            return m;
+            return [m, ind];
         });
     });
     return msg.then((e)=>{
-        return [e,"; soundscape: "+e + "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+        return [e[0],"; soundscape: "+e[0] + "; soundscape index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }
 
@@ -212,7 +216,7 @@ async openTabs(lib){
         //console.log(i,windows[i+1]);
         //driver.getWindowHandle().then((va)=>{console.log(va);});
         //var p1 = driver.wait(until.elementIsVisible(driver.findElement(By.css('div.contextPla'))), 100000);
-        /*var p2 = driver.wait(function(){
+        var p2 = driver.wait(function(){
             return driver.findElement(By.id('mute')).then((elem1)=>{
                 return elem1.getAttribute("class").then(async function(classes){
                     if (classes.indexOf('active') < 0 && classes.indexOf('disabled') < 0 && !processed) {
@@ -221,8 +225,8 @@ async openTabs(lib){
                     }
                 });
             })
-        }, 100000);*/
-        var p2 = driver.wait(until.elementTextContains(driver.findElement(By.id('msg')),'Playing'),100000);
+        }, 100000);
+        //var p2 = driver.wait(until.elementTextContains(driver.findElement(By.id('msg')),'Playing'),100000);
         await p2.then(async function(ele){
             processed = true;
             let value = await ele.getAttribute("class").then((value)=>{return value});

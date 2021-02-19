@@ -7,6 +7,7 @@
     document.getElementById("start").disabled = false;
     document.getElementById("stop").disabled = false;
     document.getElementById("switch").disabled = false;
+    document.getElementById("pause").disabled = false;
     socket.emit("restbpm", bpm);
   });
 
@@ -16,18 +17,21 @@
   })
 
 
-  const startbutton = document.getElementById("start")
-  const nextbutton = document.getElementById("next")
-  const stopbutton = document.getElementById("stop")
-  const formbutton = document.getElementById("formbutton")
-  const switchbutton = document.getElementById("switch")
+  const startbutton = document.getElementById("start");
+  const nextbutton = document.getElementById("next");
+  const stopbutton = document.getElementById("stop");
+  const formbutton = document.getElementById("formbutton");
+  const switchbutton = document.getElementById("switch");
+  const pausebutton = document.getElementById("pause");
 
   switchbutton.addEventListener('change', function(){
     if (this.checked) {
       document.getElementById("switchtext").innerHTML = "Training Mode";
+      socket.emit("mode",0); // 0: training
     }
     else{
       document.getElementById("switchtext").innerHTML = "Therapeutic Mode";
+      socket.emit("mode",1); // 1: therapeutic
     }
   })
 
@@ -35,7 +39,6 @@
     startbutton.disabled = true;
     nextbutton.disabled = false;
     socket.emit("startsocket", null);
-
   })
 
 
@@ -47,6 +50,11 @@
   stopbutton.addEventListener('click', function() {
     socket.emit("stopsocket", null);
     socket.close();
+  })
+
+  pausebutton.addEventListener('click', function(){
+    socket.emit("pausesocket", null);
+    document.getElementById("pausetext").innerHTML = "Resume";
   })
 
   formbutton.addEventListener('click', function(){
