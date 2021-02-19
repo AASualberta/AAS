@@ -39,7 +39,7 @@ class Algorithm{
 	generateNext(d, mode, pressed){
 
 		this.mode = mode;
-		
+
 		var m = null;
 		var rew = this.generateReward(d, pressed);
 		//console.log("reward", rew);
