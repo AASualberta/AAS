@@ -38,8 +38,50 @@ close(){
     });
 }
 
-pause() {
+async getVolume(){
+    var msg = driver.findElement(By.css('body')).then(async (el)=>{
+        return await driver.findElement(By.css('div.ui-slider-range-min')).then(async (ele)=>{
+            return await ele.getAttribute("style").then((e)=>{
+                console.log(e.split(":"))
+                return parseFloat(e.split(":")[1]);
+            });
+        });
+    }).catch((e) => { console.error(e.message) });
+    
+    return msg;
+}
 
+async changeVolume(change_num){
+    var self = this;
+    var key;
+    if (change_num < 0){
+        key = "j";
+    }
+    else {
+        key = "k";
+    }
+    change_num = Math.abs(change_num)
+    for (var i = change_num - 1; i >= 0; i--) {
+        await driver.findElement(By.css('body')).then(async (el)=>{
+            el.sendKeys(Key.chord(key)).then((a)=>{
+                //console.log("change volume value...");
+            }).catch((e) => { console.error(e.message) });
+        }).catch((e) => { console.error(e.message) });
+    }
+}
+
+async pause() {
+    var self = this;
+    var msg = driver.findElement(By.css('body')).then(async (el)=>{
+        el.sendKeys(Key.chord("p")).then((a)=>{
+            //console.log("unmute...");
+        }).catch((e) => { console.error(e.message) });
+        return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
+            return await ele.getText().then((e)=>{
+                return e;
+            });
+        });
+    }).catch((e) => { console.error(e.message) });
 }
 
 addBPM(bpm){

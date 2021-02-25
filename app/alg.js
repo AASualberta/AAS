@@ -39,7 +39,6 @@ class Algorithm{
 	generateNext(d, mode, pressed){
 
 		this.mode = mode;
-
 		var m = null;
 		var rew = this.generateReward(d, pressed);
 		//console.log("reward", rew);
@@ -68,7 +67,7 @@ class Algorithm{
 		}
 		var max_ind = indexOfMax(this.sounds);
 		var current;
-		if ((pressed && max_ind==this.current) || rew<0) {
+		if (max_ind==this.current && (rew<0 || pressed)) {
 			var temp = this.sounds[max_ind];
 			this.sounds[max_ind] = -Infinity;
 			current = indexOfMax(this.sounds);

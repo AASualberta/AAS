@@ -17,6 +17,7 @@ const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
 var bpm_connected = false;
 var mode = 0; // default is training mode
+var pause_num = 0;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -57,7 +58,8 @@ async function stop(){
 
 
 io.on('connection', async (socket) => {
-  //console.log(seleniumtest);
+    var timer;
+    //console.log(seleniumtest);
     await seleniumtest.init().then(()=>{
       router.post('/test', async (ctx, next) =>{
         if (!bpm_connected){
@@ -77,12 +79,18 @@ io.on('connection', async (socket) => {
         console.log("Timestamp: "+ Date.now()+ "; Action: started" + e[1]);
         socket.emit("next", e[0]);
       });
-      timeout(1, 0);
+      //timeout(1, 0);
+      timer = new Timer(callbackfn, seleniumtest.timer);
     });
     socket.on("nextsocket", async (arg) => {
       //console.log("Timestamp: ", Date.now(), "Action: next_pressed")
-      clearTimeout(seleniumtest.timeouts);
-      timeout(0, 1);
+      //clearTimeout(seleniumtest.timeouts);
+      //timeout(0, 1);
+      if (pause_num%2) {
+        timer.resume();
+      }
+      timer.restart();
+
     });
     socket.on("stopsocket", async (arg) => {
       stop();
@@ -97,13 +105,89 @@ io.on('connection', async (socket) => {
       mode = arg;
     })
     socket.on("pausesocket", async (arg) => {
+      pause_num += 1;
+      if (pause_num%2) {
+        timer.pause();
+      }
+      else{
+        timer.resume();
+      }
+    });
+    socket.on("changeVolume", async (arg) => {
+      var change_nums = Math.floor(parseFloat(arg) / 3);
+      seleniumtest.changeVolume(change_nums);
+    });
+    function callbackfn(){
+        timer.switch(this, seleniumtest.timeouts)
+    }
+    async function playNext(action){
+        var msg = seleniumtest.playNext(mode, action);
+        msg.then(async (e)=>{
+          var a = null;
+          switch(action){
+            case 1:
+              a = "next_pressed";
+              break;
+            case 0:
+              a = "switched";
+              break;
+          }
+          console.log("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1])
+          socket.emit("next", e[0]);
+          seleniumtest.getVolume().then((v) =>{
+            console.log("get volume:", v);
+            socket.emit("volume", v);
+          });
+          
+        })
+    }
+    var Timer = function(callback, delay) {
+        var timerId, start, fixedtime = delay, remaining = delay;
+        var first = true;
+        this.pause = function() {
+            seleniumtest.pause()
+            clearTimeout(timerId);
+            console.log("Timestamp: "+ Date.now()+ "; Action: pause")
+            remaining -= Date.now() - start;
+        };
 
-    })
+        this.resume = async function() {
+            if(!first){
+              seleniumtest.pause()
+              console.log("Timestamp: "+ Date.now()+ "; Action: resume")
+            }
+            else{
+              seleniumtest.getVolume().then((v) =>{
+                console.log("get volume:", v);
+                socket.emit("volume", v);
+              });
+              first = false;
+            }
+            start = Date.now();
+            clearTimeout(timerId);
+            timerId = setTimeout(callback, remaining);  
+        };
 
+        this.restart = function() {
+            playNext(1)
+            start = Date.now();
+            clearTimeout(timerId);
+            timerId = setTimeout(callback, fixedtime);
+        };
+
+        this.switch = function (){
+            playNext(0)
+            start = Date.now();
+            clearTimeout(timerId);
+            timerId = setTimeout(callback, fixedtime);
+        }
+
+        this.resume();
+    };
+
+    /*
     function timeout(first, action) {
-        /*
-            Call playNext() every 10 seconds.
-        */
+
         if(!first){
             var msg = seleniumtest.playNext(mode, action);
             msg.then((e)=>{
@@ -123,7 +207,7 @@ io.on('connection', async (socket) => {
         seleniumtest.timeouts = setTimeout(function () {
             timeout(0, 0);
         }, seleniumtest.timer);
-    }
+    }*/
 
 
 });

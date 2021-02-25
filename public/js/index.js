@@ -1,12 +1,20 @@
+  const nextbutton = document.getElementById("next");
+  const stopbutton = document.getElementById("stop");
+  const formbutton = document.getElementById("formbutton");
+  const modebutton = document.getElementsByName("mode");
+  const pausebutton = document.getElementById("pause");
+  const title = document.getElementById("h");
 
   console.log("hello")
   var bpm;
   const socket = io();
+  var first = true;
+  var volume;
+
   socket.on('init', function(msg){ 
     document.getElementById("h").innerHTML = "loaded";
-    document.getElementById("start").disabled = false;
+    pausebutton.classList.toggle("playDisabled");
     document.getElementById("stop").disabled = false;
-    document.getElementById("switch").disabled = false;
     document.getElementById("pause").disabled = false;
     socket.emit("restbpm", bpm);
   });
@@ -17,14 +25,24 @@
   })
 
 
-  const startbutton = document.getElementById("start");
-  const nextbutton = document.getElementById("next");
-  const stopbutton = document.getElementById("stop");
-  const formbutton = document.getElementById("formbutton");
-  const switchbutton = document.getElementById("switch");
-  const pausebutton = document.getElementById("pause");
 
-  switchbutton.addEventListener('change', function(){
+
+  var prev = null;
+  for (var i = 0; i < modebutton.length; i++) {
+      modebutton[i].addEventListener('change', function() {
+          if (this !== prev) {
+              prev = this;
+          }
+          if (this.value == "Training") {
+            socket.emit("mode",0); // 0: training
+          }
+          else{
+            socket.emit("mode",1); // 1: therapeutic
+          }
+      });
+  }
+/*
+  modebutton.addEventListener('change', function(){
     if (this.checked) {
       document.getElementById("switchtext").innerHTML = "Training Mode";
       socket.emit("mode",0); // 0: training
@@ -34,12 +52,7 @@
       socket.emit("mode",1); // 1: therapeutic
     }
   })
-
-  startbutton.addEventListener('click', function() {
-    startbutton.disabled = true;
-    nextbutton.disabled = false;
-    socket.emit("startsocket", null);
-  })
+*/
 
 
   nextbutton.addEventListener('click', function() {
@@ -53,8 +66,22 @@
   })
 
   pausebutton.addEventListener('click', function(){
-    socket.emit("pausesocket", null);
-    document.getElementById("pausetext").innerHTML = "Resume";
+    pausebutton.classList.toggle("active");
+    if (first) {
+      socket.emit("startsocket", null);
+      nextbutton.disabled = false;
+      first = false;
+    }
+    else{
+      socket.emit("pausesocket", null);
+      if (title.innerHTML == "Playing") {
+        title.innerHTML = "Pause";
+      }
+      else{
+        title.innerHTML = "Playing";
+      }
+    }
+
   })
 
   formbutton.addEventListener('click', function(){
@@ -69,3 +96,16 @@
     //document.getElementById("msg").innerHTML = bpm;
     
   })
+
+document.getElementById("volume-control").addEventListener("change", function(){
+  slideAmount = document.getElementById("volume-control").value;
+  console.log(slideAmount);
+  socket.emit("changeVolume", slideAmount-volume);
+  volume = slideAmount;
+})
+
+
+socket.on("volume",function(msg){
+  volume = parseFloat(msg);
+  document.getElementById("volume-control").value = volume;
+})
