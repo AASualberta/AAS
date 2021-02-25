@@ -135,7 +135,7 @@ io.on('connection', async (socket) => {
           console.log("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1])
           socket.emit("next", e[0]);
           seleniumtest.getVolume().then((v) =>{
-            console.log("get volume:", v);
+            //console.log("get volume:", v);
             socket.emit("volume", v);
           });
           
@@ -158,7 +158,7 @@ io.on('connection', async (socket) => {
             }
             else{
               seleniumtest.getVolume().then((v) =>{
-                console.log("get volume:", v);
+                //console.log("get volume:", v);
                 socket.emit("volume", v);
               });
               first = false;

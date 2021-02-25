@@ -99,7 +99,7 @@
 
 document.getElementById("volume-control").addEventListener("change", function(){
   slideAmount = document.getElementById("volume-control").value;
-  console.log(slideAmount);
+  //console.log(slideAmount);
   socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
 })

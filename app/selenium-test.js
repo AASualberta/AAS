@@ -42,7 +42,7 @@ async getVolume(){
     var msg = driver.findElement(By.css('body')).then(async (el)=>{
         return await driver.findElement(By.css('div.ui-slider-range-min')).then(async (ele)=>{
             return await ele.getAttribute("style").then((e)=>{
-                console.log(e.split(":"))
+                //console.log(e.split(":"))
                 return parseFloat(e.split(":")[1]);
             });
         });
