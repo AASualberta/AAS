@@ -3,8 +3,9 @@ const chrome = require('selenium-webdriver/chrome');
 const {Builder, By, Key, until, Capabilities} = require('selenium-webdriver');
 const Algorithm = require('./alg.js')
 
-var options = new chrome.Options()
-options.addArguments("--autoplay-policy=no-user-gesture-required")
+var options = new chrome.Options();
+options.headless();
+options.addArguments("--autoplay-policy=no-user-gesture-required");
 options.windowSize({height:5, width:5, x:0, y:0});
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
@@ -13,7 +14,17 @@ var driver = new webdriver.Builder()
 
 //driver.manage().window().setRect({height:5, width:5, x:0, y:0});
 
-const num = 3;
+const num = 10;
+const allSounds = [['White Noise & Co.', 'https://mynoise.net/NoiseMachines/whiteNoiseGenerator.php'],
+                ['White Rain', 'https://mynoise.net/NoiseMachines/whiteRainNoiseGenerator.php'],
+                ['Grey Noise', 'https://mynoise.net/NoiseMachines/greyNoiseGenerator.php'],
+                ['88 Keys', 'https://mynoise.net/NoiseMachines/acousticPianoSoundscapeGenerator.php'],
+                ['Cat Purr', 'https://mynoise.net/NoiseMachines/catPurrNoiseGenerator.php'],
+                ['Rainforest', 'https://mynoise.net/NoiseMachines/rainforestNoiseGenerator.php'],
+                ['Primeval Forest', 'https://mynoise.net/NoiseMachines/primevalEuropeanForestSoundscapeGenerator.php'],
+                ['Summer Night', 'https://mynoise.net/NoiseMachines/ultrasonicNoiseGenerator.php'],
+                ['Aircraft Cabin Noise', 'https://mynoise.net/NoiseMachines/cabinNoiseGenerator.php'],
+                ['Tierra del Fuego', 'https://mynoise.net/NoiseMachines/landOfFireNaturalSoundscapeGenerator.php']];
 const alg = new Algorithm(num);
 class SeleniumTest{
 
@@ -27,6 +38,7 @@ class SeleniumTest{
         this.bpms = [];
         this.avg_bpm = 0;
         //await this.init();
+
     }
 
 
@@ -86,7 +98,8 @@ async pause() {
 
 addBPM(bpm){
     //console.log(this.bpms)
-    this.bpms.push(bpm);
+    //this.bpms.push(bpm);
+    this.avg_bpm = bpm;
 }
 
 restBPM(restbpm){
@@ -97,7 +110,7 @@ restBPM(restbpm){
 select(mode, pressed){
     /*
         Select the next soundscape.
-    */
+    
     //return index
     var sum = 0;
     for (var i = this.bpms.length - 1; i >= 0; i--) {
@@ -105,8 +118,9 @@ select(mode, pressed){
     }
     var avg = sum / this.bpms.length
     //console.log(Date.now(),"average", avg);
-    this.avg_bpm = avg;
-    var idx = alg.generateNext(avg, mode, pressed); //generate reward from averaged bpm
+    this.avg_bpm = avg;*/
+    //console.log(this.avg_bpm)
+    var idx = alg.generateNext(this.avg_bpm, mode, pressed); //generate reward from averaged bpm
     this.select_msg = alg.getMessage();
     this.bpms = [];
     return idx; // randomly generated.
@@ -127,11 +141,6 @@ async startFirstSound(){
             });
         });
     }).catch((e) => { console.error(e.message) });
-    var sum = 0;
-    for (var i = self.bpms.length - 1; i >= 0; i--) {
-        sum += parseFloat(self.bpms[i]);
-    }
-    self.avg_bpm = sum / self.bpms.length
     return msg.then((e)=>{
         return [e,"; soundscape: "+ e + "; soundscape index: "+(num-1).toString()+ "; heart_rate: " + self.avg_bpm.toString()]
     })
@@ -190,7 +199,7 @@ async init(){
         4. Initialize the browser and all tabs, load all sounds.
     */
     var SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
-    var allSounds = [];
+    /*var allSounds = [];
     // Initialize the driver.
     driver.get(SELENIUM_REMOTE_URL);
 
@@ -208,10 +217,9 @@ async init(){
             });
         });
         allSounds.push(comb);
-    }
-
+    }*/
     // Select sounds.
-    var lib = this.getLibrary(allSounds);
+    var lib = allSounds;
 
     //Open all tabs and wait until all sounds are loaded.
     await this.openTabs(lib);
@@ -281,7 +289,7 @@ async openTabs(lib){
             await driver.findElement(By.css('body')).then(async function(bd){
                 //driver.getTitle().then((e)=>console.log(e))
                 await bd.sendKeys(Key.chord("p")).then((a)=>{
-                    console.log("loading..."+((i+1)/num).toFixed(2)*100+"%.");
+                    console.log("loading..."+((i+1)/num).toFixed(3)*100+"%.");
                 }).catch((e)=>{console.error(e.message);});
             }).catch((e)=>{console.error(e.message);});
             
@@ -317,4 +325,6 @@ async openTabs(lib){
 
 
 }
-module.exports = SeleniumTest
+var seleniumtest = new SeleniumTest();
+
+module.exports = seleniumtest;

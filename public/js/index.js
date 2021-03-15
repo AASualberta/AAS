@@ -5,23 +5,24 @@
   const pausebutton = document.getElementById("pause");
   const title = document.getElementById("h");
 
-  console.log("hello")
   var bpm;
-  const socket = io();
+  //const socket = io();
   var first = true;
   var volume;
 
-  socket.on('init', function(msg){ 
+  socket.on('init123', function(msg){ 
+    console.log(msg)
     document.getElementById("h").innerHTML = "loaded";
     pausebutton.classList.toggle("playDisabled");
     document.getElementById("stop").disabled = false;
     document.getElementById("pause").disabled = false;
+    document.getElementById("volume-control").disabled = false;
     socket.emit("restbpm", bpm);
   });
 
   socket.on('next', function(msg){
     document.getElementById("h").innerHTML = "Playing";
-    document.getElementById("msg").innerHTML = msg;
+    //document.getElementById("msg").innerHTML = msg;
   })
 
 

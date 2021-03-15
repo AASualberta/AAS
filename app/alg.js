@@ -81,6 +81,8 @@ class Algorithm{
 	epsilonGreedy(pressed){
 		var rand = Math.random();
 		var current, max_ind;
+		// epsilon greedy
+		// 120 page
 		if (rand < this.epsilon){ // randomly picked
 			current = Math.floor(Math.random() * this.num);
 			if (pressed && current==this.current) {
@@ -112,18 +114,19 @@ class Algorithm{
 	}
 
 	generateReward(d, pressed){
-		var bpm = d;
+		var bpm = d + 5; // change to upper bound restbpm
 
 		if (this.previous_bpm == -1) {
 			this.previous_bpm = this.restbpm;
 		}
 		var rate_dif = this.previous_bpm - bpm;
-		var rest_dif = this.restbpm - bpm;
+		var rest_dif = this.restbpm - bpm; 
 		this.previous_bpm = bpm;
 		var rew = Math.max(rate_dif, rest_dif);
-		rew = 2/(1+Math.pow(Math.E, -rew)) - 1; //normalize to -1 ~ 1
+		// 
+		// rew = 2/(1+Math.pow(Math.E, -rew)) - 1; //normalize to -1 ~ 1
 		if (pressed) {
-			return -1;
+			return -30; // maximum penalty
 		}
 		return rew;
 	}
