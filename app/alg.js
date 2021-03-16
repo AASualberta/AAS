@@ -16,22 +16,61 @@ function indexOfMax(arr) {
 
     return maxIndex;
 }
+
+function actionValueLog(sounds, num){
+	var output = '[';
+	for (var i = 0; i < num; i++) {
+		output += '[';
+		for (var j = 0; j < num-1; j++) {
+			output += (sounds[i][j].toFixed(2).toString() + ',');
+		}
+		output += (sounds[i][j].toFixed(2).toString() + '],');
+	}
+	output += ']';
+	return output;
+}
+
 class Algorithm{
 
 	constructor(num){
 		this.num = num;
-		this.sounds = [];
+		this.sounds = []; // action value function
+		this.policy = []; // probability of choosing an action
+		this.max = 30;
+		this.min = -30;
+		this.epsilon = 0.5
+		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
+		this.nongreedy_prob = this.epsilon / this.num;
 		for (var i = this.num; i > 0; i--) {
-			this.sounds.push(0);
+			var temp = [];
+			var prob = [];
+			// initialize action value function
+			for (var j = 0; j < this.num; j++) {
+				temp.push(Math.floor(Math.random() * (this.max - this.min + 1) + this.min));
+			}
+			this.sounds.push(temp);
+			//initialize policy
+			var maxIndex = indexOfMax(temp);
+			for (var j = 0; j < this.num; j++) {
+				if (j == maxIndex) {
+					prob.push(this.greedy_prob);
+				}
+				else{
+					prob.push(this.nongreedy_prob);
+				}
+			}	
+			this.policy.push(prob);
 		}
 		this.previous_bpm = -1;
 		this.restbpm = 0;
 		this.current = this.num - 1;
-		this.learning_rate = 0.3;
-		this.epsilon = 0.5
+		this.previous = this.num - 1;
+		this.learning_rate = 0.7;
+		
 		this.msg = null
 		this.mode = -1; // 0: training, 1: therapeutic
 		this.started = 0;
+		this.gamma = 0.9;
 	}
 	getMessage(){
 		return this.msg;
@@ -43,6 +82,7 @@ class Algorithm{
 		var rew = this.generateReward(d, pressed);
 		//console.log("reward", rew);
 		this.updateState(rew);
+		this.previous = this.current;
 		if (this.mode == 0) { //training
 			m = "training";
 			this.current = this.epsilonGreedy(pressed);
@@ -57,7 +97,7 @@ class Algorithm{
 			this.current = this.Greedy(pressed, rew, isRandom);
 		}
 		//console.log(this.current);
-		this.msg = "; reward: "+rew.toString()+ "; value_function: "+this.sounds + "; mode: "+ m;
+		this.msg = "; reward: "+rew.toString()+ "; value_function: "+actionValueLog(this.sounds, this.num) + "; mode: "+ m;
 		return this.current;
 	}
 
@@ -65,13 +105,13 @@ class Algorithm{
 		if (isRandom) {
 			return Math.floor(Math.random() * this.num);
 		}
-		var max_ind = indexOfMax(this.sounds);
+		var max_ind = indexOfMax(this.sounds[this.current]);
 		var current;
 		if (max_ind==this.current && (rew<0 || pressed)) {
-			var temp = this.sounds[max_ind];
-			this.sounds[max_ind] = -Infinity;
-			current = indexOfMax(this.sounds);
-			this.sounds[max_ind] = temp;
+			var temp = this.sounds[this.current][max_ind];
+			this.sounds[this.current][max_ind] = -Infinity;
+			current = indexOfMax(this.sounds[this.current]);
+			this.sounds[this.current][max_ind] = temp;
 		}
 		else
 			current = max_ind;
@@ -79,10 +119,24 @@ class Algorithm{
 	}
 
 	epsilonGreedy(pressed){
-		var rand = Math.random();
-		var current, max_ind;
+		var current = this.current;
 		// epsilon greedy
-		// 120 page
+		while (true) {
+			var prob=0;
+			var rand = Math.random();
+			for (var i = 0; i < this.num; i++) {
+				if (rand > prob && rand <= prob+this.policy[this.current][i]) {
+					current = i;
+					break;
+				}
+				prob += this.policy[this.current][i];
+			}
+			if (!pressed || current != this.current) {
+				break;
+			}
+		}
+
+		/*
 		if (rand < this.epsilon){ // randomly picked
 			current = Math.floor(Math.random() * this.num);
 			if (pressed && current==this.current) {
@@ -90,23 +144,35 @@ class Algorithm{
 			}
 		}
 		else{ // maximum value
-			max_ind = indexOfMax(this.sounds);
+			max_ind = indexOfMax(this.sounds[this.current]);
 			if (pressed && max_ind==this.current) {
-				var temp = this.sounds[max_ind];
-				this.sounds[max_ind] = -Infinity;
-				current = indexOfMax(this.sounds);
-				this.sounds[max_ind] = temp;
+				var temp = this.sounds[this.current][max_ind];
+				this.sounds[this.current][max_ind] = -Infinity;
+				current = indexOfMax(this.sounds[this.current]);
+				this.sounds[this.current][max_ind] = temp;
 			}
 			else{
 				current = max_ind;
 			}
-		}
+		}*/
 		return current;
 	}
 
 	updateState(rew){
-		var s = this.sounds[this.current];
-		this.sounds[this.current] += this.learning_rate * (rew - s);
+		var s = this.sounds[this.previous][this.current];
+		// update state action value
+		this.sounds[this.previous][this.current] += 
+			this.learning_rate * (rew + this.gamma*Math.max(...this.sounds[this.current]) - s).toFixed(3);
+		// update policy
+		var maxIndex = indexOfMax(this.sounds[this.previous]);
+		for (var j = 0; j < this.num; j++) {
+			if (j == maxIndex) {
+				this.policy[this.previous][j] = this.greedy_prob;
+			}
+			else{
+				this.policy[this.previous][j] = this.nongreedy_prob;
+			}
+		}
 	}
 
 	setRestBPM(d) {
