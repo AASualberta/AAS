@@ -19,14 +19,12 @@ function indexOfMax(arr) {
 
 function actionValueLog(sounds, num){
 	var output = '[';
-	for (var i = 0; i < num; i++) {
-		output += '[';
-		for (var j = 0; j < num-1; j++) {
-			output += (sounds[i][j].toFixed(2).toString() + ',');
-		}
-		output += (sounds[i][j].toFixed(2).toString() + '],');
+
+	for (var j = 0; j < num-1; j++) {
+		output += (sounds[j].toFixed(2).toString() + ',');
 	}
-	output += ']';
+	output += (sounds[j].toFixed(2).toString() + '],');
+
 	return output;
 }
 
@@ -41,30 +39,25 @@ class Algorithm{
 		this.epsilon = 0.5
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
-		for (var i = this.num; i > 0; i--) {
-			var temp = [];
-			var prob = [];
-			// initialize action value function
-			for (var j = 0; j < this.num; j++) {
-				temp.push(Math.floor(Math.random() * (this.max - this.min + 1) + this.min));
-			}
-			this.sounds.push(temp);
-			//initialize policy
-			var maxIndex = indexOfMax(temp);
-			for (var j = 0; j < this.num; j++) {
-				if (j == maxIndex) {
-					prob.push(this.greedy_prob);
-				}
-				else{
-					prob.push(this.nongreedy_prob);
-				}
-			}	
-			this.policy.push(prob);
+		
+		for (var j = 0; j < this.num; j++) {
+			this.sounds.push(Math.floor(Math.random() * (this.max - this.min + 1) + this.min));
 		}
+	
+		var maxIndex = indexOfMax(this.sounds);
+		for (var j = 0; j < this.num; j++) {
+			if (j == maxIndex) {
+				this.policy.push(this.greedy_prob);
+			}
+			else{
+				this.policy.push(this.nongreedy_prob);
+			}
+		}	
+		
 		this.previous_bpm = -1;
 		this.restbpm = 0;
 		this.current = this.num - 1;
-		this.previous = this.num - 1;
+		//this.previous = this.num - 1;
 		this.learning_rate = 0.7;
 		
 		this.msg = null
@@ -82,7 +75,7 @@ class Algorithm{
 		var rew = this.generateReward(d, pressed);
 		//console.log("reward", rew);
 		this.updateState(rew);
-		this.previous = this.current;
+		//this.previous = this.current;
 		if (this.mode == 0) { //training
 			m = "training";
 			this.current = this.epsilonGreedy(pressed);
@@ -105,13 +98,13 @@ class Algorithm{
 		if (isRandom) {
 			return Math.floor(Math.random() * this.num);
 		}
-		var max_ind = indexOfMax(this.sounds[this.current]);
+		var max_ind = indexOfMax(this.sounds);
 		var current;
 		if (max_ind==this.current && (rew<0 || pressed)) {
-			var temp = this.sounds[this.current][max_ind];
-			this.sounds[this.current][max_ind] = -Infinity;
-			current = indexOfMax(this.sounds[this.current]);
-			this.sounds[this.current][max_ind] = temp;
+			var temp = this.sounds[max_ind];
+			this.sounds[max_ind] = -Infinity;
+			current = indexOfMax(this.sounds);
+			this.sounds[max_ind] = temp;
 		}
 		else
 			current = max_ind;
@@ -125,11 +118,11 @@ class Algorithm{
 			var prob=0;
 			var rand = Math.random();
 			for (var i = 0; i < this.num; i++) {
-				if (rand > prob && rand <= prob+this.policy[this.current][i]) {
+				if (rand > prob && rand <= prob+this.policy[i]) {
 					current = i;
 					break;
 				}
-				prob += this.policy[this.current][i];
+				prob += this.policy[i];
 			}
 			if (!pressed || current != this.current) {
 				break;
@@ -159,18 +152,18 @@ class Algorithm{
 	}
 
 	updateState(rew){
-		var s = this.sounds[this.previous][this.current];
+		var s = this.sounds[this.current];
 		// update state action value
-		this.sounds[this.previous][this.current] += 
-			this.learning_rate * (rew + this.gamma*Math.max(...this.sounds[this.current]) - s).toFixed(3);
+		this.sounds[this.current] += 
+			this.learning_rate * (rew + this.gamma*Math.max(...this.sounds) - s).toFixed(3);
 		// update policy
-		var maxIndex = indexOfMax(this.sounds[this.previous]);
+		var maxIndex = indexOfMax(this.sounds);
 		for (var j = 0; j < this.num; j++) {
 			if (j == maxIndex) {
-				this.policy[this.previous][j] = this.greedy_prob;
+				this.policy[j] = this.greedy_prob;
 			}
 			else{
-				this.policy[this.previous][j] = this.nongreedy_prob;
+				this.policy[j] = this.nongreedy_prob;
 			}
 		}
 	}
