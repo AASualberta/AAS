@@ -23,7 +23,7 @@ function actionValueLog(sounds, num){
 	for (var j = 0; j < num-1; j++) {
 		output += (sounds[j].toFixed(2).toString() + ',');
 	}
-	output += (sounds[j].toFixed(2).toString() + '],');
+	output += (sounds[j].toFixed(2).toString() + ']');
 
 	return output;
 }
@@ -39,9 +39,9 @@ class Algorithm{
 		this.epsilon = 0.5
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
-		
+		// equal probability for initialization
 		for (var j = 0; j < this.num; j++) {
-			this.sounds.push(Math.floor(Math.random() * (this.max - this.min + 1) + this.min));
+			this.sounds.push(0);
 		}
 	
 		var maxIndex = indexOfMax(this.sounds);
@@ -55,7 +55,7 @@ class Algorithm{
 		}	
 		
 		this.previous_bpm = -1;
-		this.restbpm = 0;
+		this.restbpm = 60;
 		this.current = this.num - 1;
 		//this.previous = this.num - 1;
 		this.learning_rate = 0.7;

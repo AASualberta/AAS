@@ -10,6 +10,7 @@
   var first = true;
   var volume;
 
+
   socket.on('init123', function(msg){ 
     console.log(msg)
     document.getElementById("h").innerHTML = "loaded";
@@ -25,8 +26,25 @@
     //document.getElementById("msg").innerHTML = msg;
   })
 
+  socket.on('reload', function(msg) {
+    pausebutton.classList.toggle("playDisabled");
+    console.log(msg)
+    if (msg) {
+      first = false;
+      document.getElementById("h").innerHTML = "Playing";
+      pausebutton.classList.toggle("active");
+    }
+    else{
+      document.getElementById("h").innerHTML = "Pause";
+    }
+    document.getElementById("stop").disabled = false;
+    document.getElementById("pause").disabled = false;
+    document.getElementById("volume-control").disabled = false;
+    if (!first) {
+      nextbutton.disabled = false;
+    }
 
-
+  })
 
   var prev = null;
   for (var i = 0; i < modebutton.length; i++) {
@@ -85,6 +103,17 @@
 
   })
 
+  function formbtn(){
+    var x = document.getElementById("form");
+    
+    var i;
+    for (i = 0; i < x.length ;i++) {
+      bpm = x.elements[i].value;
+    }
+    document.getElementById("beforestart").style.display = "none";
+    document.getElementById("started").style.display = "block";
+  }
+/*
   formbutton.addEventListener('click', function(){
     var x = document.getElementById("form");
     
@@ -96,7 +125,7 @@
     document.getElementById("started").style.display = "block";
     //document.getElementById("msg").innerHTML = bpm;
     
-  })
+  })*/
 
 document.getElementById("volume-control").addEventListener("change", function(){
   slideAmount = document.getElementById("volume-control").value;

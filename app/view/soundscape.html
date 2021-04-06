@@ -1,0 +1,70 @@
+<script src="js/jquery.min.js"></script>
+<script src="js/socket.io.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script>
+  const socket = io("http://localhost:3000/");
+</script>
+
+<div class="container">
+  <div class="vertical-center center row align-items-center" id="started"  style="display:block;">
+    <div>
+      <h3 id="h">Loading...</h3>
+      <a href="#" class="play playDisabled" id="pause"></a>
+
+    </div>
+    <div class="row align-items-center">
+      <div class="col-3"></div>
+      <div class="col-6">
+        <button id="next" type="button" class="btn btn-block" disabled>Switch</button>  
+      </div>
+      <div class="col-3"></div>
+    </div>
+    <div class="row justify-content-center" style="margin-top: 10px;">
+      <div class="col-3"></div>
+      <div class="col-6">
+        <button id="stop" type="button" class="btn btn-block" disabled>Stop</button> 
+      </div>
+      <div class="col-3"></div>
+    </div>
+    <br>
+    <div id="player">
+      <div class="row">
+        <div class="col-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-volume-down" style="float: right" viewBox="0 0 16 16">
+            <path d="M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12V4zM6.312 6.39L8 5.04v5.92L6.312 9.61A.5.5 0 0 0 6 9.5H4v-3h2a.5.5 0 0 0 .312-.11zM12.025 8a4.486 4.486 0 0 1-1.318 3.182L10 10.475A3.489 3.489 0 0 0 11.025 8 3.49 3.49 0 0 0 10 5.525l.707-.707A4.486 4.486 0 0 1 12.025 8z"/>
+          </svg>
+        </div>
+        <div class="col-4">
+          
+          <input id="volume-control" type="range" min="0" max="100" step="3" value="50" disabled>
+          
+        </div>
+        <div class="col-4">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-volume-up" style="float: left" viewBox="0 0 16 16">
+            <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
+            <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/>
+            <path d="M10.025 8a4.486 4.486 0 0 1-1.318 3.182L8 10.475A3.489 3.489 0 0 0 9.025 8c0-.966-.392-1.841-1.025-2.475l.707-.707A4.486 4.486 0 0 1 10.025 8zM7 4a.5.5 0 0 0-.812-.39L3.825 5.5H1.5A.5.5 0 0 0 1 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 7 12V4zM4.312 6.39L6 5.04v5.92L4.312 9.61A.5.5 0 0 0 4 9.5H2v-3h2a.5.5 0 0 0 .312-.11z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <br>
+    <div class="row justify-content-center">
+      <div class="col-5">
+        <label class="" style="float: right" for="Training">
+          <input class="" type="radio" name="mode" value="Training" checked>
+          Training Mode
+        </label>
+      </div>
+      <div class="col-5">
+        <label class="" style="float: left" for="Therapeutic">
+          <input class="" type="radio" name="mode" value="Therapeutic">
+          Therapeutic Mode
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="js/index.js"></script>

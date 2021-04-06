@@ -103,8 +103,11 @@ addBPM(bpm){
 }
 
 restBPM(restbpm){
-    console.log("resting heart rate:", restbpm);
-    alg.setRestBPM(restbpm);
+    if (restbpm) {
+       console.log("resting heart rate:", restbpm);
+        alg.setRestBPM(restbpm); 
+    }
+    
 }
 
 select(mode, pressed){

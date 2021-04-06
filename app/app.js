@@ -19,6 +19,7 @@ var bpm_connected = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
 var inited = false;
+var playing = false;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -34,16 +35,21 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
+router.get('/soundscape', async (ctx, next) => {
+  //console.log("soundscape loaded")
+  await ctx.render('soundscape');
+  if (!inited) {
+    initialize();
+    ioconnection();
+  }
+  if (ctx.request.query['restbpm']) {
+    restbpm(ctx.request.query['restbpm']);
+  }
+})
 
 
 router.get('/', async (ctx, next) => {
-  //console.log(ctx.request.body);
   await ctx.render('index');
-  if (!inited) {
-    
-    initialize();
-  }
-  ioconnection();
 });
 
 async function initialize(){
@@ -90,10 +96,24 @@ function ioconnection(){
               seleniumtest.addBPM(ctx.request.body);
             }
         });
+        
   }); 
 }
 
 io.on('connection', async (socket) => {
+      //console.log(`Socket ${socket.id} connected. pause_num:`, pause_num);
+
+      socket.on('disconnect', () => {
+        //console.log(`Socket ${socket.id} disconnected.`);
+      });
+      if (inited) {
+        //console.log(socket.id, pause_num)
+        if (pause_num%2 == 0) {
+          socket.emit("reload", false);
+        }
+        else socket.emit("reload", true);
+      }
+
       socket.on("startsocket", async (arg) => {
         await seleniumtest.startFirstSound().then((e)=>{
           console.log("Timestamp: "+ Date.now()+ "; Action: started" + e[1]);
@@ -101,12 +121,13 @@ io.on('connection', async (socket) => {
         });
         //timeout(1, 0);
         timer = new Timer(callbackfn, seleniumtest.timer);
+        pause_num += 1;
       });
       socket.on("nextsocket", async (arg) => {
         //console.log("Timestamp: ", Date.now(), "Action: next_pressed")
         //clearTimeout(seleniumtest.timeouts);
         //timeout(0, 1);
-        if (pause_num%2) {
+        if (pause_num%2 == 0) {
           timer.resume();
         }
         timer.restart();
@@ -129,7 +150,8 @@ io.on('connection', async (socket) => {
       })
       socket.on("pausesocket", async (arg) => {
         pause_num += 1;
-        if (pause_num%2) {
+        //console.log(pause_num)
+        if (pause_num%2 == 0) {
           timer.pause();
         }
         else{
