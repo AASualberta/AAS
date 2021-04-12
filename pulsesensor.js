@@ -1,23 +1,54 @@
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
-const port = new SerialPort('/dev/tty.usbserial-A6008lMx', {
-  baudRate: 9600,
-})
-
+let portser;
+let PulseSensor;
+let path;
+var hr_arr = []; // array of [timestamp, heart rate]
 var xhr = new XMLHttpRequest();
 var url='http://127.0.0.1:3000/test';
-const PulseSensor = port.pipe(new Readline('\r\n'))
-var hr_arr = []; // array of [timestamp, heart rate]
 
-PulseSensor.on('data', function (data) {
-  //console.log(Date.now(), data.toString('utf8'));
-  dt = parseInt(data.toString('utf8'));
-  if (dt) {
-  	hr_arr.push([Date.now(), dt]);
-  	averageHR();
+(async () => {
+  try {
+    const serialList = await SerialPort.list();
+
+    serialList.forEach((port) =>{
+    	//console.log(port.path)
+    	if (port.path.includes("/dev/tty.usbserial") || port.path.includes("/dev/tty.usbmodem"))
+    		path = port.path;
+    })
+    //console.log(path)
+    portser = new SerialPort(path, {baudRate: 9600});
+    
+	PulseSensor = portser.pipe(new Readline('\r\n'))
+	
+	PulseSensor.on('data', function (data) {
+	  //console.log(Date.now(), data.toString('utf8'));
+	  dt = parseInt(data.toString('utf8'));
+	  if (dt) {
+	  	hr_arr.push([Date.now(), dt]);
+	  	averageHR();
+	  }
+	});
+
+  } catch (e) {
+    console.log(e);
   }
-});
+})()
+
+/*var arduinoPort =  SerialPort.list().then((ports)=>{
+	return ports.forEach((port) => {
+		if (port.includes("/dev/tty.usbserial") || port.include("/dev/tty.usbmodem")) {
+			return port;
+		}
+	})
+})
+
+const port = new SerialPort(arduinoPort, {
+  baudRate: 9600,
+})*/
+
+
 
 function averageHR() {
 	// get the last minute's heart rate
@@ -31,7 +62,7 @@ function averageHR() {
 		var avg = (sum / hr_arr.length).toFixed(2); // average heart rate over 1 minute
 		xhr.open("POST", url, true);
 		xhr.send(avg.toString());
-	
+	//console.log(avg)
 }
 
 
