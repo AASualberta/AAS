@@ -134,6 +134,10 @@ async startFirstSound(){
         Play the first soundscape.
     */
     var self = this;
+    var ind = alg.current;
+    //console.log(alg.current);
+    var windows = await driver.getAllWindowHandles();
+    await driver.switchTo().window(windows[ind+1]);
     var msg = driver.findElement(By.css('body')).then(async (el)=>{
         el.sendKeys(Key.chord("p")).then((a)=>{
             //console.log("unmute...");
@@ -145,7 +149,7 @@ async startFirstSound(){
         });
     }).catch((e) => { console.error(e.message) });
     return msg.then((e)=>{
-        return [e,"; soundscape: "+ e + "; soundscape index: "+(num-1).toString()+ "; heart_rate: " + self.avg_bpm.toString()]
+        return [e,"; soundscape: "+ e + "; soundscape index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString()]
     })
 }
 

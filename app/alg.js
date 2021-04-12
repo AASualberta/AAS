@@ -17,13 +17,13 @@ function indexOfMax(arr) {
     return maxIndex;
 }
 
-function actionValueLog(sounds, num){
+function actionValueLog(values, num){
 	var output = '[';
 
 	for (var j = 0; j < num-1; j++) {
-		output += (sounds[j].toFixed(2).toString() + ',');
+		output += (values[j].toFixed(2).toString() + ',');
 	}
-	output += (sounds[j].toFixed(2).toString() + ']');
+	output += (values[j].toFixed(2).toString() + ']');
 
 	return output;
 }
@@ -32,19 +32,19 @@ class Algorithm{
 
 	constructor(num){
 		this.num = num;
-		this.sounds = []; // action value function
+		this.values = []; // action values
 		this.policy = []; // probability of choosing an action
-		this.max = 30;
-		this.min = -30;
+		//this.max = 30;
+		//this.min = -30;
 		this.epsilon = 0.5
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
 		// equal probability for initialization
 		for (var j = 0; j < this.num; j++) {
-			this.sounds.push(0);
+			this.values.push(0);
 		}
 	
-		var maxIndex = indexOfMax(this.sounds);
+		var maxIndex = indexOfMax(this.values);
 		for (var j = 0; j < this.num; j++) {
 			if (j == maxIndex) {
 				this.policy.push(this.greedy_prob);
@@ -55,10 +55,11 @@ class Algorithm{
 		}	
 		
 		this.previous_bpm = -1;
-		this.restbpm = 60;
-		this.current = this.num - 1;
+		this.restbpm = 60; //set default restbpm
+		this.upperbound = this.restbpm + 5; //default upper bound of restbpm
+		this.current = Math.floor(Math.random() * this.num);
 		//this.previous = this.num - 1;
-		this.learning_rate = 0.7;
+		this.step_size = 0.7;
 		
 		this.msg = null
 		this.mode = -1; // 0: training, 1: therapeutic
@@ -74,7 +75,7 @@ class Algorithm{
 		var m = null;
 		var rew = this.generateReward(d, pressed);
 		//console.log("reward", rew);
-		this.updateState(rew);
+		this.update(rew);
 		//this.previous = this.current;
 		if (this.mode == 0) { //training
 			m = "training";
@@ -90,7 +91,7 @@ class Algorithm{
 			this.current = this.Greedy(pressed, rew, isRandom);
 		}
 		//console.log(this.current);
-		this.msg = "; reward: "+rew.toString()+ "; value_function: "+actionValueLog(this.sounds, this.num) + "; mode: "+ m;
+		this.msg = "; reward: "+rew.toString()+ "; value_function: "+actionValueLog(this.values, this.num) + "; mode: "+ m;
 		return this.current;
 	}
 
@@ -98,13 +99,13 @@ class Algorithm{
 		if (isRandom) {
 			return Math.floor(Math.random() * this.num);
 		}
-		var max_ind = indexOfMax(this.sounds);
+		var max_ind = indexOfMax(this.values);
 		var current;
 		if (max_ind==this.current && (rew<0 || pressed)) {
-			var temp = this.sounds[max_ind];
-			this.sounds[max_ind] = -Infinity;
-			current = indexOfMax(this.sounds);
-			this.sounds[max_ind] = temp;
+			var temp = this.values[max_ind];
+			this.values[max_ind] = -Infinity;
+			current = indexOfMax(this.values);
+			this.values[max_ind] = temp;
 		}
 		else
 			current = max_ind;
@@ -137,12 +138,12 @@ class Algorithm{
 			}
 		}
 		else{ // maximum value
-			max_ind = indexOfMax(this.sounds[this.current]);
+			max_ind = indexOfMax(this.values[this.current]);
 			if (pressed && max_ind==this.current) {
-				var temp = this.sounds[this.current][max_ind];
-				this.sounds[this.current][max_ind] = -Infinity;
-				current = indexOfMax(this.sounds[this.current]);
-				this.sounds[this.current][max_ind] = temp;
+				var temp = this.values[this.current][max_ind];
+				this.values[this.current][max_ind] = -Infinity;
+				current = indexOfMax(this.values[this.current]);
+				this.values[this.current][max_ind] = temp;
 			}
 			else{
 				current = max_ind;
@@ -151,13 +152,13 @@ class Algorithm{
 		return current;
 	}
 
-	updateState(rew){
-		var s = this.sounds[this.current];
+	update(rew){
+		var s = this.values[this.current];
 		// update state action value
-		this.sounds[this.current] += 
-			this.learning_rate * (rew + this.gamma*Math.max(...this.sounds) - s).toFixed(3);
+		this.values[this.current] += 
+			this.step_size * (rew - s).toFixed(3);
 		// update policy
-		var maxIndex = indexOfMax(this.sounds);
+		var maxIndex = indexOfMax(this.values);
 		for (var j = 0; j < this.num; j++) {
 			if (j == maxIndex) {
 				this.policy[j] = this.greedy_prob;
@@ -169,17 +170,18 @@ class Algorithm{
 	}
 
 	setRestBPM(d) {
-		this.restbpm = parseFloat(d);
+		this.restbpm = parseFloat(d); // upper bound of the restbpm
+		this.upperbound = this.restbpm + 5;
 	}
 
 	generateReward(d, pressed){
-		var bpm = d + 5; // change to upper bound restbpm
+		var bpm = d; 
 
 		if (this.previous_bpm == -1) {
-			this.previous_bpm = this.restbpm;
+			this.previous_bpm = this.upperbound;
 		}
 		var rate_dif = this.previous_bpm - bpm;
-		var rest_dif = this.restbpm - bpm; 
+		var rest_dif = this.upperbound - bpm; 
 		this.previous_bpm = bpm;
 		var rew = Math.max(rate_dif, rest_dif);
 		// 
