@@ -1,9 +1,0 @@
-const SerialPort = require('serialport');
-const Readline = SerialPort.parsers.Readline;
-const port = new SerialPort('/dev/cu.usbmodem14101', {
-  baudRate: 9600,
-})
-const PulseSensor = port.pipe(new Readline('\r\n'))
-PulseSensor.on('data', function (data) {
-  console.log(data.toString('utf8'));
-});
