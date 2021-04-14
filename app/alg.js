@@ -17,6 +17,7 @@ function indexOfMax(arr) {
     return maxIndex;
 }
 
+
 function actionValueLog(values, num){
 	var output = '[';
 
@@ -99,16 +100,17 @@ class Algorithm{
 		if (isRandom) {
 			return Math.floor(Math.random() * this.num);
 		}
-		var max_ind = indexOfMax(this.values);
 		var current;
-		if (max_ind==this.current && (rew<0 || pressed)) {
-			var temp = this.values[max_ind];
-			this.values[max_ind] = -Infinity;
+
+		if (rew<0 || pressed) {
+			var temp = this.values[this.current];
+			this.values[this.current] = -Infinity;
 			current = indexOfMax(this.values);
-			this.values[max_ind] = temp;
+			this.values[this.current] = temp;
 		}
 		else
-			current = max_ind;
+			current = this.current;
+
 		return current;
 	}
 
@@ -129,26 +131,6 @@ class Algorithm{
 				break;
 			}
 		}
-
-		/*
-		if (rand < this.epsilon){ // randomly picked
-			current = Math.floor(Math.random() * this.num);
-			if (pressed && current==this.current) {
-				current = ((current-1)%this.num + this.num)%this.num; // index minus 1
-			}
-		}
-		else{ // maximum value
-			max_ind = indexOfMax(this.values[this.current]);
-			if (pressed && max_ind==this.current) {
-				var temp = this.values[this.current][max_ind];
-				this.values[this.current][max_ind] = -Infinity;
-				current = indexOfMax(this.values[this.current]);
-				this.values[this.current][max_ind] = temp;
-			}
-			else{
-				current = max_ind;
-			}
-		}*/
 		return current;
 	}
 
@@ -170,13 +152,12 @@ class Algorithm{
 	}
 
 	setRestBPM(d) {
-		this.restbpm = parseFloat(d); // upper bound of the restbpm
-		this.upperbound = this.restbpm + 5;
+		this.restbpm = parseFloat(d); 
+		this.upperbound = this.restbpm + 5; // upper bound of the restbpm
 	}
 
 	generateReward(d, pressed){
 		var bpm = d; 
-
 		if (this.previous_bpm == -1) {
 			this.previous_bpm = this.upperbound;
 		}
@@ -184,8 +165,6 @@ class Algorithm{
 		var rest_dif = this.upperbound - bpm; 
 		this.previous_bpm = bpm;
 		var rew = Math.max(rate_dif, rest_dif);
-		// 
-		// rew = 2/(1+Math.pow(Math.E, -rew)) - 1; //normalize to -1 ~ 1
 		if (pressed) {
 			return -30; // maximum penalty
 		}
