@@ -37,7 +37,7 @@ class Algorithm{
 		this.policy = []; // probability of choosing an action
 		//this.max = 30;
 		//this.min = -30;
-		this.epsilon = 0.5
+		this.epsilon = 1;
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
 		// equal probability for initialization
