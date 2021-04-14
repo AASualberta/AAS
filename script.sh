@@ -23,7 +23,7 @@ if which node > /dev/null
         brew install node
     fi
 npm install
-npm install chromedriver
+npm install -g chromedriver
 
 if which python3 > /dev/null
 	then
