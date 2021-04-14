@@ -63,6 +63,14 @@ async getVolume(){
     return msg;
 }
 
+async changeAlpha(alpha) {
+    alg.setAlpha(alpha);
+}
+
+async changeEpsilon(epsilon) {
+    alg.setEpsilon(epsilon);
+}
+
 async changeVolume(change_num){
     var self = this;
     var key;

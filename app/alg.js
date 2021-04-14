@@ -70,6 +70,15 @@ class Algorithm{
 	getMessage(){
 		return this.msg;
 	}
+
+	setAlpha(alpha){
+		this.step_size = alpha;
+	}
+
+	setEpsilon(epsilon) {
+		this.epsilon = epsilon;
+	}
+
 	generateNext(d, mode, pressed){
 
 		this.mode = mode;

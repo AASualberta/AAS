@@ -4,6 +4,7 @@
   const modebutton = document.getElementsByName("mode");
   const pausebutton = document.getElementById("pause");
   const title = document.getElementById("h");
+  const paramsbutton = document.getElementById("params");
 
   var bpm;
   //const socket = io();
@@ -72,6 +73,10 @@
     }
   })
 */
+  
+  paramsbutton.addEventListener('click', function() {
+    document.getElementById("collapseExample").classList.toggle("show");
+  })
 
 
   nextbutton.addEventListener('click', function() {
@@ -128,11 +133,24 @@
   })*/
 
 document.getElementById("volume-control").addEventListener("change", function(){
-  slideAmount = document.getElementById("volume-control").value;
+  var slideAmount = document.getElementById("volume-control").value;
   //console.log(slideAmount);
   socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
-})
+});
+
+
+document.getElementById("epsilon_range").addEventListener("change", function() {
+  var epsilon_range = document.getElementById("epsilon_range").value;
+  socket.emit("epsilon", epsilon_range);
+  document.getElementById("epsilon_value").innerHTML = epsilon_range;
+});
+
+document.getElementById("alpha_range").addEventListener("change", function() {
+  var alpha_range = document.getElementById("alpha_range").value;
+  socket.emit("alpha", alpha_range);
+  document.getElementById("alpha_value").innerHTML = alpha_range;
+});
 
 
 socket.on("volume",function(msg){

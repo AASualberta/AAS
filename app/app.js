@@ -162,6 +162,17 @@ io.on('connection', async (socket) => {
         var change_nums = Math.floor(parseFloat(arg) / 3);
         seleniumtest.changeVolume(change_nums);
       });
+
+      socket.on("epsilon", async (arg) =>{
+        seleniumtest.changeEpsilon(parseFloat(arg));
+        console.log("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg);
+      })
+
+      socket.on("alpha", async(arg) => {
+        seleniumtest.changeAlpha(parseFloat(arg));
+        console.log("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg);
+      })
+
       function callbackfn(){
           timer.switch(this, seleniumtest.timeouts)
       }
