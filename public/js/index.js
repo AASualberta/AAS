@@ -47,6 +47,15 @@
 
   })
 
+  socket.on('isAdmin', function(msg) {
+    if (msg) {
+      paramsbutton.disabled = false;
+    }
+    else {
+      paramsbutton.disabled = true;
+    }
+  })
+
   var prev = null;
   for (var i = 0; i < modebutton.length; i++) {
       modebutton[i].addEventListener('change', function() {

@@ -1,4 +1,8 @@
 // app/alg.js
+const fs = require('fs');
+const readline = require('readline');
+const Stream = require('stream');
+
 function indexOfMax(arr) {
     if (arr.length === 0) {
         return -1;
@@ -17,10 +21,24 @@ function indexOfMax(arr) {
     return maxIndex;
 }
 
+function readActionValuesFromFile(filename) {
+	if (!fs.existsSync(filename)) {
+		console.log("doesn't exist")
+		return null;
+	}
+	var lines = fs.readFileSync(filename, 'utf-8').split('\n');
+	for (var i = lines.length - 1; i >= 0; i--) {
+		if (lines[i].includes("value_function")){
+			var temp = lines[i].split(";");
+			var actionValues = temp[temp.length-2].split(':')[1].match(/(\-\d|\d)+(?:\.\d+)?/g).map(Number);
+			return actionValues;
+		}
+	}
+}
 
 function actionValueLog(values, num){
 	var output = '[';
-
+	//console.log(values)
 	for (var j = 0; j < num-1; j++) {
 		output += (values[j].toFixed(2).toString() + ',');
 	}
@@ -44,16 +62,7 @@ class Algorithm{
 		for (var j = 0; j < this.num; j++) {
 			this.values.push(0);
 		}
-	
-		var maxIndex = indexOfMax(this.values);
-		for (var j = 0; j < this.num; j++) {
-			if (j == maxIndex) {
-				this.policy.push(this.greedy_prob);
-			}
-			else{
-				this.policy.push(this.nongreedy_prob);
-			}
-		}	
+		this.loadPolicy();
 		
 		this.previous_bpm = -1;
 		this.restbpm = 60; //set default restbpm
@@ -61,14 +70,58 @@ class Algorithm{
 		this.current = Math.floor(Math.random() * this.num);
 		//this.previous = this.num - 1;
 		this.step_size = 0.7;
+		this.mode = 0; // 0: training, 1: therapeutic
+		this.msg = "; value_function: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
 		
-		this.msg = null
-		this.mode = -1; // 0: training, 1: therapeutic
 		this.started = 0;
 		this.gamma = 0.9;
 	}
 	getMessage(){
 		return this.msg;
+	}
+
+	setMode(mode){
+		this.mode = mode;
+		this.msg = "; value_function: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
+	}
+
+	getModeMsg(mode) {
+		var m;
+		if (this.mode == 0) { //training
+			m = "training";
+		}
+		else{ //therapeutic
+			m = "therapeutic";
+		}
+		return m;
+	}
+
+	loadPolicy() {
+		var maxIndex = indexOfMax(this.values);
+		if (this.values.every(i => i===0)) { // if action values are all zeros
+			this.policy = Array(this.num).fill(1.0/this.num); // same prob for all actions
+			//console.log(this.policy);
+		}
+		else{
+			for (var j = 0; j < this.num; j++) {
+				if (j == maxIndex) {
+					this.policy.push(this.greedy_prob);
+				}
+				else{
+					this.policy.push(this.nongreedy_prob);
+				}
+			}
+		}	
+	}
+
+	loadValues(filename, mode){
+		var values = readActionValuesFromFile(filename);
+		if (values) {
+			this.values = values;
+			//console.log(this.values)
+			this.loadPolicy();
+		}
+		this.msg = "; value_function: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(mode);
 	}
 
 	setAlpha(alpha){
@@ -170,10 +223,10 @@ class Algorithm{
 		if (this.previous_bpm == -1) {
 			this.previous_bpm = this.upperbound;
 		}
-		var rate_dif = this.previous_bpm - bpm;
-		var rest_dif = this.upperbound - bpm; 
-		this.previous_bpm = bpm;
+		var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
+		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
 		var rew = Math.max(rate_dif, rest_dif);
+		this.previous_bpm = bpm;
 		if (pressed) {
 			return -30; // maximum penalty
 		}

@@ -1,5 +1,6 @@
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
+const fs = require('fs');
 const {Builder, By, Key, until, Capabilities} = require('selenium-webdriver');
 const Algorithm = require('./alg.js')
 
@@ -38,6 +39,7 @@ class SeleniumTest{
         this.bpms = [];
         this.avg_bpm = 0;
         //await this.init();
+        this.logfile = null;
 
     }
 
@@ -61,6 +63,15 @@ async getVolume(){
     }).catch((e) => { console.error(e.message) });
     
     return msg;
+}
+
+async setMode(mode){
+    alg.setMode(mode);
+}
+
+async loadValues(user, mode) {
+    var userfile = "./log/"+user+".log";
+    alg.loadValues(userfile, mode);
 }
 
 async changeAlpha(alpha) {
@@ -112,10 +123,15 @@ addBPM(bpm){
 
 restBPM(restbpm){
     if (restbpm) {
-       console.log("resting heart rate:", restbpm);
+        let str = "resting heart rate: " + restbpm + "\n";
+        fs.appendFileSync(this.logfile, str);
         alg.setRestBPM(restbpm); 
     }
     
+}
+setLogFile(logfile) {
+    this.logfile = logfile;
+    //console.log(logfile);
 }
 
 select(mode, pressed){
@@ -156,8 +172,10 @@ async startFirstSound(){
             });
         });
     }).catch((e) => { console.error(e.message) });
+    this.select_msg = alg.getMessage();
+    //console.log(this.select_msg)
     return msg.then((e)=>{
-        return [e,"; soundscape: "+ e + "; soundscape index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString()]
+        return [e,"; soundscape: "+ e + "; soundscape index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString() + this.select_msg]
     })
 }
 
@@ -270,6 +288,7 @@ async openTabs(lib){
                 a. Wait until the 'mute' button is pointer-interactive.
                 b. Send key 'm' to mute the sound.
     */
+    var self = this;
     for (var i = 0; i < lib.length; i++) {
         await driver.executeScript("window.open('"+lib[i][1]+"', '"+i+"');", );
     }
@@ -304,7 +323,8 @@ async openTabs(lib){
             await driver.findElement(By.css('body')).then(async function(bd){
                 //driver.getTitle().then((e)=>console.log(e))
                 await bd.sendKeys(Key.chord("p")).then((a)=>{
-                    console.log("loading..."+((i+1)/num).toFixed(3)*100+"%.");
+                    //let str = "loading..."+((i+1)/num).toFixed(3)*100+"%.\n";
+                    //fs.appendFileSync(self.logfile, str);
                 }).catch((e)=>{console.error(e.message);});
             }).catch((e)=>{console.error(e.message);});
             

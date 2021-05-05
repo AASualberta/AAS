@@ -3,14 +3,60 @@
 <script src="js/bootstrap.min.js"></script>
 
 
+
 <div class="container">
-  <div class="vertical-center center row align-items-center bg_gray" id="beforestart">
+  <div class="vertical-center center row align-items-center bg_gray" id="login_page">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center " id="choose">
+        <button class="btn btn-block" id="signin_button" type="button" > Sign In </button>
+        <button class="btn btn-block" id="signup_button" type="button" > Sign Up </button>
+      </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+
+  <div class="vertical-center center row align-items-center bg_gray" id="signin" style="display: none;">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center ">
+        <form id="form" class="center" action="/signin" method="post">
+            <label for="restbpm" class="center">User Name:</label>
+            <input required type="text" id="username" name="username" style="width: 100%" ><br><br>
+        <div class="center" >
+          <input id="formbutton" type="submit" class="btn btn-block" value="Sign in"> 
+        </div>
+        </form>
+      </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+
+  <div class="vertical-center center row align-items-center bg_gray" id="signup"  style="display: none;">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center ">
+        <form id="form" class="center" action="/soundscape" method="post">
+            <label for="restbpm" class="center">User Name:</label>
+            <input required type="text" id="username" name="username" style="width: 100%" ><br><br>
+            <label for="restbpm" class="center">Resting heart rate:</label>
+            <input required type="number" id="restbpm" name="restbpm" style="width: 100%" ><br><br>
+        <div class="center" >
+          <input id="formbutton" type="submit" class="btn btn-block" value="Sign up"> 
+        </div>
+        </form>
+      </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+
+  <div class="vertical-center center row align-items-center bg_gray" id="beforestart"  style="display: none;">
     <div class="col-1"></div>
     <div class="col-xl-10">
       <div class="center ">
         <form id="form" class="center" action="/soundscape">
             <label for="restbpm" class="center">Resting heart rate:</label>
-            <input required type="text" id="restbpm" name="restbpm" style="width: 100%" ><br><br>
+            <input required type="number" id="restbpm" name="restbpm" style="width: 100%" ><br><br>
         <div class="center" >
           <input id="formbutton" type="submit" class="btn btn-block" > 
         </div>
@@ -19,4 +65,8 @@
     </div>
     <div class="col-1"></div>
   </div>
+
 </div>
+
+<script src="js/start.js"></script>
+
