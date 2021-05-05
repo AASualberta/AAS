@@ -49,9 +49,11 @@
 
   socket.on('isAdmin', function(msg) {
     if (msg) {
+      document.getElementById("parambutton").style.display = "flex";
       paramsbutton.disabled = false;
     }
     else {
+      document.getElementById("parambutton").style.display = "none";
       paramsbutton.disabled = true;
     }
   })
