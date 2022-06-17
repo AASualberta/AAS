@@ -25,6 +25,7 @@ var url='http://127.0.0.1:3000/test';
 	PulseSensor.on('data', function (data) {
 	  //console.log(Date.now(), data.toString('utf8'));
 	  dt = parseInt(data.toString('utf8'));
+	  console.log(dt);
 	  if (dt) {
 	  	hr_arr.push([Date.now(), dt]);
 	  	averageHR();

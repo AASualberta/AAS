@@ -51,10 +51,17 @@
     if (msg) {
       document.getElementById("parambutton").style.display = "flex";
       paramsbutton.disabled = false;
+      for (var i = 0; i < modebutton.length; i++) {
+        modebutton[i].disabled = false;
+      }
     }
     else {
       document.getElementById("parambutton").style.display = "none";
       paramsbutton.disabled = true;
+      document.getElementById("modebuttons").style.display = "none";
+      for (var i = 0; i < modebutton.length; i++) {
+        modebutton[i].disabled = true;
+      }
     }
   })
 

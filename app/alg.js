@@ -27,7 +27,7 @@ function readActionValuesFromFile(filename) {
 		return null;
 	}
 	var lines = fs.readFileSync(filename, 'utf-8').split('\n');
-	for (var i = lines.length - 1; i >= 0; i--) {
+	for (var i = lines.length - 1; i >= 0; i--) { // get latest action values from logfile
 		if (lines[i].includes("value_function")){
 			var temp = lines[i].split(";");
 			var actionValues = temp[temp.length-2].split(':')[1].match(/(\-\d|\d)+(?:\.\d+)?/g).map(Number);

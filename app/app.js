@@ -19,6 +19,8 @@ const router = koaRouter();
 const server = require('http').createServer(app.callback());
 var io = require('socket.io')(server);
 
+var timer;
+
 var bpm_connected = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
@@ -44,7 +46,6 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
-  //console.log("soundscape loaded")
   if (!user) { // if no user is signed in/up
     user = ctx.request.body['username'];
     var re = db.findName(ctx.request.body['username']); // check if user exists
@@ -56,6 +57,12 @@ router.post('/soundscape', async (ctx, next) => {
     // if an existing user signs up again, restbpm is updated.
     logfile = db.addUser(user, ctx.request.body['restbpm']);
     seleniumtest.setLogFile(logfile);
+
+    // check if training time > 3hours
+    if (db.findTime(user) > 10800000){
+      mode = 1;
+      seleniumtest.setMode(1)
+    }
   }
   else { // if already sign in/up, prevent it to sign in/up again
     logfile = "./log/" + user + ".log";
@@ -64,6 +71,7 @@ router.post('/soundscape', async (ctx, next) => {
   if (user.toLowerCase() == "admin") {
     isAdmin = true;
   }
+
   await ctx.render('soundscape');
   if (!inited) {
     initialize();
@@ -91,6 +99,13 @@ router.post('/signin', async (ctx, next) => {
     if (re){
       user = re["name"]; // get user name
       seleniumtest.loadValues(user); // load action values from file
+
+      // check if training time > 3hours
+      if (db.findTime(user) > 10800000){
+        mode = 1;
+        seleniumtest.setMode(1)
+      }
+
       // redirect to the url '/soundscape'
       ctx.status = 307;
       ctx.redirect("/soundscape");
@@ -140,18 +155,25 @@ async function restbpm(arg){
 }
 
 async function stop(){
-  var str = "Timestamp: "+Date.now()+'; Action: exiting\n';
+  var sessionTime;
+  if (typeof timer == 'undefined'){ // timer not initialized means play never clicked
+    sessionTime = 0;
+  }
+  else{
+    sessionTime = timer.getSessionTime();
+  }
+  var str = "Timestamp: "+Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
   fs.appendFileSync(logfile, str);
+  db.updateTime(user, sessionTime);
   seleniumtest.close();
 }
 
 function ioconnection(){
   io.on('connection', async (socket) => {
-      var timer;
       //console.log(seleniumtest);
       //await seleniumtest.init().then(()=>{
       router.post('/test', async (ctx, next) =>{
-        //console.log(inited, bpm_connected, ctx.request.body)
+        //console.log(inited, bpm_connected, ctx.request.body);
         if (!bpm_connected){
           if (inited) {
             let str = "Timestamp: "+Date.now()+"; connected\n";
@@ -277,12 +299,15 @@ io.on('connection', async (socket) => {
       var Timer = function(callback, delay) {
           var timerId, start, fixedtime = delay, remaining = delay;
           var first = true;
+          var lastStart = Date.now();
+          var total = 0
           this.pause = function() {
               seleniumtest.pause()
               clearTimeout(timerId);
               let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
               fs.appendFileSync(logfile, str);
               remaining -= Date.now() - start;
+              total += Date.now() - lastStart; // update time spent in training
           };
 
           this.resume = async function() {
@@ -300,7 +325,8 @@ io.on('connection', async (socket) => {
               }
               start = Date.now();
               clearTimeout(timerId);
-              timerId = setTimeout(callback, remaining);  
+              timerId = setTimeout(callback, remaining);
+              lastStart = Date.now();  
           };
 
           this.restart = function() {
@@ -315,6 +341,11 @@ io.on('connection', async (socket) => {
               start = Date.now();
               clearTimeout(timerId);
               timerId = setTimeout(callback, fixedtime);
+          }
+
+          this.getSessionTime = function(){
+            total += Date.now() - lastStart; // update time spent in training
+            return total;
           }
 
           this.resume();
