@@ -2,7 +2,7 @@ const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const fs = require('fs');
 const {Builder, By, Key, until, Capabilities} = require('selenium-webdriver');
-const Algorithm = require('./alg.js')
+const Algorithm = require('./alg.js');
 
 var options = new chrome.Options();
 options.headless();
@@ -33,7 +33,7 @@ class SeleniumTest{
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
-        this.timer = 60000; // Each sound is played up to 10 seconds.
+        this.timer = 60000; // Each sound is played up to a minute.
         this.msg = null;
         this.select_msg = null;
         this.bpms = [];
@@ -129,6 +129,7 @@ restBPM(restbpm){
     }
     
 }
+
 setLogFile(logfile) {
     this.logfile = logfile;
     //console.log(logfile);
