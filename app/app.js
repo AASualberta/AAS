@@ -188,7 +188,8 @@ function ioconnection(){
             seleniumtest.addBPM(ctx.request.body);
           }
       });
-      socket.emit("isAdmin", isAdmin);  
+      socket.emit("isAdmin", isAdmin);
+      socket.emit("setMode", mode);  
   }); 
 }
 

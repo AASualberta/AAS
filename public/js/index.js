@@ -1,5 +1,5 @@
   const nextbutton = document.getElementById("next");
-  const stopbutton = document.getElementById("stop");
+  const stopbutton = document.getElementById("stop"); 
   const formbutton = document.getElementById("formbutton");
   const modebutton = document.getElementsByName("mode");
   const pausebutton = document.getElementById("pause");
@@ -7,23 +7,34 @@
   const paramsbutton = document.getElementById("params");
 
   var bpm;
-  //const socket = io();
-  var first = true;
+  // const socket = io();
+  // var first = true;
+  var started = false;
   var volume;
+  var currentMode;
 
 
+  // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
-    console.log(msg)
     document.getElementById("h").innerHTML = "loaded";
-    pausebutton.classList.toggle("playDisabled");
+    // pausebutton.classList.toggle("playDisabled");
     document.getElementById("stop").disabled = false;
-    document.getElementById("pause").disabled = false;
-    document.getElementById("volume-control").disabled = false;
+    // document.getElementById("pause").disabled = false;
+    // document.getElementById("volume-control").disabled = false;
     socket.emit("restbpm", bpm);
   });
 
+  socket.on('setMode', function(msg){
+    if (msg == 0){
+      currentMode = "Discovery Mode"
+    }
+    else{
+      currentMode = "Therapeutic Mode"
+    }
+  })
+
   socket.on('next', function(msg){
-    document.getElementById("h").innerHTML = "Playing";
+    document.getElementById("h").innerHTML = currentMode;
     //document.getElementById("msg").innerHTML = msg;
   })
 
@@ -32,7 +43,7 @@
     console.log(msg)
     if (msg) {
       first = false;
-      document.getElementById("h").innerHTML = "Playing";
+      document.getElementById("h").innerHTML = currentMode;
       pausebutton.classList.toggle("active");
     }
     else{
@@ -103,27 +114,36 @@
 
 
   stopbutton.addEventListener('click', function() {
-    socket.emit("stopsocket", null);
-    socket.close();
+    if (!started){
+      stopbutton.innerHTML = "End Session";
+      socket.emit("startsocket", null);
+      nextbutton.disabled = false;
+      pausebutton.classList.toggle("playDisabled");
+      pausebutton.classList.toggle("active");
+      document.getElementById("pause").disabled = false;
+      document.getElementById("volume-control").disabled = false;
+      started = true;
+    }
+    else{
+      socket.emit("stopsocket", null);
+      socket.close();
+    }
   })
 
   pausebutton.addEventListener('click', function(){
     pausebutton.classList.toggle("active");
-    if (first) {
-      socket.emit("startsocket", null);
-      nextbutton.disabled = false;
-      first = false;
+    // if (first) {
+    //   socket.emit("startsocket", null);
+    //   nextbutton.disabled = false;
+    //   first = false;
+    // }
+    socket.emit("pausesocket", null);
+    if (title.innerHTML == currentMode) {
+      title.innerHTML = "Paused";
     }
     else{
-      socket.emit("pausesocket", null);
-      if (title.innerHTML == "Playing") {
-        title.innerHTML = "Pause";
-      }
-      else{
-        title.innerHTML = "Playing";
-      }
+      title.innerHTML = currentMode;
     }
-
   })
 
   function formbtn(){
