@@ -46,6 +46,7 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
+  console.log("posting");
   if (!user) { // if no user is signed in/up
     user = ctx.request.body['username'];
     var re = db.findName(ctx.request.body['username']); // check if user exists
@@ -80,9 +81,14 @@ router.post('/soundscape', async (ctx, next) => {
   if (ctx.request.body['restbpm']) {
     restbpm(ctx.request.body['restbpm']);
   }
+  if (ctx.request.body['mood']){
+    let str = "Timestamp: "+Date.now()+";User start log: "+ctx.request.body['mood']+"\n";
+    fs.appendFileSync(logfile, str);
+  }
 })
 
 router.get('/soundscape', async (ctx, next) => {
+  console.log("getting");
   if (inited && user) {
     await ctx.render('soundscape');
   }
@@ -108,7 +114,7 @@ router.post('/signin', async (ctx, next) => {
 
       // redirect to the url '/soundscape'
       ctx.status = 307;
-      ctx.redirect("/soundscape");
+      ctx.redirect("/start");
     }
     else {
       // haven't signed up yet, requires to sign up first
@@ -122,6 +128,18 @@ router.post('/signin', async (ctx, next) => {
     ctx.redirect("/soundscape");
   }
   
+})
+
+router.post('/start', async(ctx, next) => {
+  
+  if (!user){
+    //ctx.redirect("/");
+    ctx.response.status = 400;
+    ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+  }
+  else{
+    await ctx.render('start');
+  }
 })
 
 

@@ -1,0 +1,21 @@
+<script src="js/jquery.min.js"></script>
+<script src="js/socket.io.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+<div class="container">
+  <div class="vertical-center center row align-items-center bg_gray" id="startmessage">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center ">
+        <form id="form" class="center" action="/soundscape" method="post">
+            <label for="mood" class="center">Before starting, please give a short description of what you did in the last hour and how you feel:</label>
+            <input required type="text" id="mood" name="mood" placeholder="Write something here..." style="width: 100%"><br><br>
+        <div class="center" >
+          <input id="formbutton" type="submit" class="btn btn-block" value="Start Session"> 
+        </div>
+        </form>
+      </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+</div>
