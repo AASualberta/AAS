@@ -146,6 +146,8 @@ router.post('/start', async(ctx, next) => {
 router.post('/signup', async(ctx, next) => {
     // add a new user to database
     newUserLogFile = db.addUser(ctx.request.body['username'], restBPM);
+    let str = "resting heart rate: " + restBPM + "\n";
+    fs.appendFileSync(newUserLogFile, str);
     ctx.response.status = 200;
     ctx.response.body = "<p>You have successfully signed up!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
 })
@@ -223,9 +225,6 @@ function getHeartRateAtSignUp(){
           if (firstRequest){
             startTime = Date.now();
             currentSocket.emit('updateProgress',null);
-
-            restBPM = ctx.request.body; //test only
-
             firstRequest = false;
           }
           if (Date.now()-startTime > 60000){

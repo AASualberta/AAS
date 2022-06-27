@@ -123,9 +123,7 @@ addBPM(bpm){
 
 restBPM(restbpm){
     if (restbpm) {
-        let str = "resting heart rate: " + restbpm + "\n";
-        fs.appendFileSync(this.logfile, str);
-        alg.setRestBPM(restbpm); 
+        alg.setRestBPM(restbpm);
     }
     
 }

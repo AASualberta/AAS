@@ -10,9 +10,6 @@ socket.on('updateProgress', () => {
 	let str;
 	if (progress == 0){
 		str = "Connected";
-		// for testing!
-		submitbutton.disabled = false;
-		socket.close();
 	}
 	else if (progress < 10){
 		str = "Progress: "+progress*10+"%";
