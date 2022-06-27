@@ -180,6 +180,7 @@ async function restbpm(arg){
   seleniumtest.restBPM(arg);
 }
 
+
 async function stop(){
   var sessionTime;
   if (typeof timer == 'undefined'){ // timer not initialized means play never clicked

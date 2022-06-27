@@ -9,9 +9,9 @@
   var bpm;
   // const socket = io();
   // var first = true;
-  var started = false;
   var volume;
   var currentMode;
+  var timeout;
 
 
   // called when sounds are loaded and system is ready
@@ -22,6 +22,14 @@
     // document.getElementById("pause").disabled = false;
     // document.getElementById("volume-control").disabled = false;
     socket.emit("restbpm", bpm);
+
+    // start playing right when loaded
+    socket.emit("startsocket", null);
+    nextbutton.disabled = false;
+    pausebutton.classList.toggle("playDisabled");
+    pausebutton.classList.toggle("active");
+    document.getElementById("pause").disabled = false;
+    document.getElementById("volume-control").disabled = false;
   });
 
   socket.on('setMode', function(msg){
@@ -114,20 +122,8 @@
 
 
   stopbutton.addEventListener('click', function() {
-    if (!started){
-      stopbutton.innerHTML = "End Session";
-      socket.emit("startsocket", null);
-      nextbutton.disabled = false;
-      pausebutton.classList.toggle("playDisabled");
-      pausebutton.classList.toggle("active");
-      document.getElementById("pause").disabled = false;
-      document.getElementById("volume-control").disabled = false;
-      started = true;
-    }
-    else{
-      socket.emit("stopsocket", null);
-      socket.close();
-    }
+    socket.emit("stopsocket", null);
+    socket.close();
   })
 
   pausebutton.addEventListener('click', function(){
@@ -140,11 +136,19 @@
     socket.emit("pausesocket", null);
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
+      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes terminates session
     }
     else{
       title.innerHTML = currentMode;
+      clearTimeout(timeout);
     }
   })
+
+  function timeoutFunction(){
+    title.innerHTML = "SESSION TIMED OUT!"
+    socket.emit("stopsocket");
+    socket.close();
+  }
 
   function formbtn(){
     var x = document.getElementById("form");
