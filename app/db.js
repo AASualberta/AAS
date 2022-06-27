@@ -46,6 +46,10 @@ class Database {
 	findTime(name){
 		return this.db.get('users').find({name: name}).value().totaltime;
 	}
+
+	getRestBPM(name){
+		return this.db.get('users').find({name: name}).value().restbpm;
+	}
 }
 
 var DB = new Database()

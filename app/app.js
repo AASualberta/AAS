@@ -18,10 +18,12 @@ const router = koaRouter();
 
 const server = require('http').createServer(app.callback());
 var io = require('socket.io')(server);
+var currentSocket;
 
 var timer;
 
 var bpm_connected = false;
+var bpmUsedForAlg = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
 var inited = false;
@@ -30,6 +32,7 @@ var playing = false;
 var logfile;
 var user = null;
 var isAdmin = false;
+var restBPM;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -47,44 +50,43 @@ app
 
 router.post('/soundscape', async (ctx, next) => {
   console.log("posting");
-  if (!user) { // if no user is signed in/up
-    user = ctx.request.body['username'];
-    var re = db.findName(ctx.request.body['username']); // check if user exists
-    if (re) {
-      user = re["name"]; // get user name
-      seleniumtest.loadValues(user, mode); // load action values from file
-    }
-    // add a new user to database
-    // if an existing user signs up again, restbpm is updated.
-    logfile = db.addUser(user, ctx.request.body['restbpm']);
-    seleniumtest.setLogFile(logfile);
+  // if (!user) { // if no user is signed in/up
+  //   user = ctx.request.body['username'];
+  //   var re = db.findName(ctx.request.body['username']); // check if user exists
+  //   if (re) {
+  //     user = re["name"]; // get user name
+  //     seleniumtest.loadValues(user, mode); // load action values from file
+  //   }
+  //   // add a new user to database
+  //   // if an existing user signs up again, restbpm is updated.
+  //   logfile = db.addUser(user, ctx.request.body['restbpm']);
+  //   seleniumtest.setLogFile(logfile);
 
-    // check if training time > 3hours
-    if (db.findTime(user) > 10800000){
-      mode = 1;
-      seleniumtest.setMode(1)
-    }
-  }
-  else { // if already sign in/up, prevent it to sign in/up again
-    logfile = "./log/" + user + ".log";
-    seleniumtest.setLogFile(logfile);
-  }
+  //   // check if training time > 3hours
+  //   if (db.findTime(user) > 10800000){
+  //     mode = 1;
+  //     seleniumtest.setMode(1)
+  //   }
+  // }
+  // else { // if already sign in/up, prevent it to sign in/up again
+  logfile = "./log/" + user + ".log";
+  seleniumtest.setLogFile(logfile);
+  
+  restbpm(db.getRestBPM(user)); // set restbpm for user
+
   if (user.toLowerCase() == "admin") {
     isAdmin = true;
   }
 
   await ctx.render('soundscape');
   if (!inited) {
+    bpmUsedForAlg = true;
     initialize();
     ioconnection();
   }
-  if (ctx.request.body['restbpm']) {
-    restbpm(ctx.request.body['restbpm']);
-  }
-  if (ctx.request.body['mood']){
-    let str = "Timestamp: "+Date.now()+";User start log: "+ctx.request.body['mood']+"\n";
-    fs.appendFileSync(logfile, str);
-  }
+  // log user mood description
+  let str = "Timestamp: "+Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
+  fs.appendFileSync(logfile, str);
 })
 
 router.get('/soundscape', async (ctx, next) => {
@@ -114,7 +116,7 @@ router.post('/signin', async (ctx, next) => {
 
       // redirect to the url '/soundscape'
       ctx.status = 307;
-      ctx.redirect("/start");
+      ctx.redirect("/soundscape");
     }
     else {
       // haven't signed up yet, requires to sign up first
@@ -127,7 +129,6 @@ router.post('/signin', async (ctx, next) => {
     // if signed in/up, redirect to url '/soundscape'
     ctx.redirect("/soundscape");
   }
-  
 })
 
 router.post('/start', async(ctx, next) => {
@@ -142,15 +143,22 @@ router.post('/start', async(ctx, next) => {
   }
 })
 
+router.post('/signup', async(ctx, next) => {
+    // add a new user to database
+    newUserLogFile = db.addUser(ctx.request.body['username'], restBPM);
+    ctx.response.status = 200;
+    ctx.response.body = "<p>You have successfully signed up!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+})
+
 
 router.get('/', async (ctx, next) => {
   if (!user) {
     await ctx.render('index');
+    getHeartRateAtSignUp();
   }
   else {
     ctx.redirect("/soundscape");
   }
-  
 });
 
 async function initialize(){
@@ -186,12 +194,63 @@ async function stop(){
   seleniumtest.close();
 }
 
+function getHeartRateAtSignUp(){
+  let firstRequest = true;
+  let startTime;
+  let total = 0;
+  let average = 0;
+  io.on('connection', async(socket) => {
+    currentSocket = socket;
+    currentSocket.on('getBPM', () => {
+      router.post('/test', async (ctx, next) =>{
+        if (bpmUsedForAlg){
+          if (!bpm_connected){
+            if (inited) {
+              let str = "Timestamp: "+Date.now()+"; connected\n";
+              fs.appendFileSync(logfile, str);
+              currentSocket.emit("init123", "world");
+              bpm_connected = true;
+            }
+          }
+          else
+            if (ctx.request.body && inited) {
+              //console.log(ctx.request.body)
+              seleniumtest.addBPM(ctx.request.body);
+            }
+        }
+        else{ // used for signup
+          if (firstRequest){
+            startTime = Date.now();
+            currentSocket.emit('updateProgress',null);
+
+            restBPM = ctx.request.body; //test only
+
+            firstRequest = false;
+          }
+          if (Date.now()-startTime > 60000){
+            currentSocket.emit('updateProgress',null);
+            total += 1;
+            if (total > 3){
+              average+=parseInt(ctx.request.body);
+            }
+            if (total==10){
+              restBPM = average/7;
+            }
+          }
+        }
+      })
+    })
+
+  })
+}
+
+
 function ioconnection(){
   io.on('connection', async (socket) => {
+    currentSocket = socket;
       //console.log(seleniumtest);
       //await seleniumtest.init().then(()=>{
       router.post('/test', async (ctx, next) =>{
-        //console.log(inited, bpm_connected, ctx.request.body);
         if (!bpm_connected){
           if (inited) {
             let str = "Timestamp: "+Date.now()+"; connected\n";
