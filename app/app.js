@@ -306,6 +306,10 @@ io.on('connection', async (socket) => {
 
       });
       socket.on("stopsocket", async (arg) => {
+        if (arg){
+          let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
+          fs.appendFileSync(logfile, str);
+        }
         stop();
       });
       /*

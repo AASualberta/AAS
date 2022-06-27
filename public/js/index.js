@@ -136,7 +136,7 @@
     socket.emit("pausesocket", null);
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
-      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes terminates session
+      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
     }
     else{
       title.innerHTML = currentMode;
@@ -146,7 +146,7 @@
 
   function timeoutFunction(){
     title.innerHTML = "SESSION TIMED OUT!"
-    socket.emit("stopsocket");
+    socket.emit("stopsocket", true);
     socket.close();
   }
 
