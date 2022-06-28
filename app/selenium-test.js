@@ -44,12 +44,15 @@ class SeleniumTest{
     }
 
 
-close(){
-    var self = this;
-    //console.log('exiting...');
-    driver.quit().then((e)=>{
-        process.exit();
-    });
+close(fromTimeout){
+    if (fromTimeout){
+        driver.quit().then((e)=>{
+            process.exit();
+        })
+    }
+    else{
+        driver.quit();
+    }
 }
 
 async getVolume(){

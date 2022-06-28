@@ -49,7 +49,6 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
-  console.log("posting");
   // if (!user) { // if no user is signed in/up
   //   user = ctx.request.body['username'];
   //   var re = db.findName(ctx.request.body['username']); // check if user exists
@@ -131,16 +130,14 @@ router.post('/signin', async (ctx, next) => {
   }
 })
 
-router.post('/start', async(ctx, next) => {
-  
-  if (!user){
-    //ctx.redirect("/");
-    ctx.response.status = 400;
-    ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
-  }
-  else{
-    await ctx.render('start');
-  }
+router.post('/end', async(ctx, next) => {
+  let str = "Timestamp: "+Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
+  fs.appendFileSync(logfile, str);
+  process.exit();
+})
+
+router.get('/end', async(ctx, next) => {
+  await ctx.render('end');
 })
 
 router.post('/signup', async(ctx, next) => {
@@ -183,7 +180,7 @@ async function restbpm(arg){
 }
 
 
-async function stop(){
+async function stop(fromTimeout){
   var sessionTime;
   if (typeof timer == 'undefined'){ // timer not initialized means play never clicked
     sessionTime = 0;
@@ -194,7 +191,7 @@ async function stop(){
   var str = "Timestamp: "+Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
   fs.appendFileSync(logfile, str);
   db.updateTime(user, sessionTime);
-  seleniumtest.close();
+  seleniumtest.close(fromTimeout);
 }
 
 function getHeartRateAtSignUp(){
@@ -305,11 +302,11 @@ io.on('connection', async (socket) => {
 
       });
       socket.on("stopsocket", async (arg) => {
-        if (arg){
+        if (arg){ // timeout
           let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
           fs.appendFileSync(logfile, str);
         }
-        stop();
+        stop(arg);
       });
       /*
       socket.on('disconnect', () => {
