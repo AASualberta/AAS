@@ -4,6 +4,7 @@
   const modebutton = document.getElementsByName("mode");
   const pausebutton = document.getElementById("pause");
   const title = document.getElementById("h");
+  const alert = document.getElementById("alert");
   const paramsbutton = document.getElementById("params");
 
   var bpm;
@@ -17,6 +18,7 @@
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
     document.getElementById("h").innerHTML = "loaded";
+    document.getElementById("alert").style.visibility = "hidden";
     // pausebutton.classList.toggle("playDisabled");
     document.getElementById("stop").disabled = false;
     // document.getElementById("pause").disabled = false;
@@ -83,6 +85,16 @@
       }
     }
   })
+
+  socket.on('surfing', function(msg){
+    document.getElementById("alert").innerHTML = "Stop surfing and listen!"
+    document.getElementById("alert").style.visibility = "visible";
+    setTimeout(hideAlert, 5000);
+  })
+
+  function hideAlert(){
+    document.getElementById("alert").style.visibility = "hidden";
+  }
 
   var prev = null;
   for (var i = 0; i < modebutton.length; i++) {

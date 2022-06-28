@@ -33,7 +33,7 @@ class SeleniumTest{
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
-        this.timer = 60000; // Each sound is played up to a minute.
+        this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
         this.msg = null;
         this.select_msg = null;
         this.bpms = [];

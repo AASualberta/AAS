@@ -21,6 +21,7 @@ var io = require('socket.io')(server);
 var currentSocket;
 
 var timer;
+var skipList = [];
 
 var bpm_connected = false;
 var bpmUsedForAlg = false;
@@ -292,14 +293,26 @@ io.on('connection', async (socket) => {
         pause_num += 1;
       });
       socket.on("nextsocket", async (arg) => {
-        //console.log("Timestamp: ", Date.now(), "Action: next_pressed")
-        //clearTimeout(seleniumtest.timeouts);
-        //timeout(0, 1);
-        if (pause_num%2 == 0) {
-          timer.resume();
+        let canskip = true;
+        if (skipList.length < 4){
+          skipList.push(Date.now());
         }
-        timer.restart();
-
+        else{
+          if ((Date.now()-skipList[0]) > 600000){
+            skipList.shift(); // remove skip if it has been more than 10 minutes
+            skipList.push(Date.now());
+          }
+          else{
+            socket.emit('surfing', null); // alert using he is skipping too much
+            canskip = false;
+          }
+        }
+        if (canskip){
+          if (pause_num%2 == 0) {
+            timer.resume();
+          }
+          timer.restart();
+        }
       });
       socket.on("stopsocket", async (arg) => {
         if (arg){ // timeout
@@ -376,7 +389,7 @@ io.on('connection', async (socket) => {
           })
       }
       var Timer = function(callback, delay) {
-          var timerId, start, fixedtime = delay, remaining = delay;
+          var timerId, start, fixedtime = delay
           var first = true;
           var lastStart = Date.now();
           var total = 0
@@ -385,14 +398,13 @@ io.on('connection', async (socket) => {
               clearTimeout(timerId);
               let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
               fs.appendFileSync(logfile, str);
-              remaining -= Date.now() - start;
               total += Date.now() - lastStart; // update time spent in training
           };
 
           this.resume = async function() {
               if(!first){
                 seleniumtest.pause()
-                let str = "Timestamp: "+ Date.now()+ "; Action: resume\n";
+                let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
                 fs.appendFileSync(logfile, str);
               }
               else{
@@ -404,7 +416,7 @@ io.on('connection', async (socket) => {
               }
               start = Date.now();
               clearTimeout(timerId);
-              timerId = setTimeout(callback, remaining);
+              timerId = setTimeout(callback, fixedtime);
               lastStart = Date.now();  
           };
 
