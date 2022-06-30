@@ -1,9 +1,9 @@
 const fs = require('fs');
 const readline = require('readline');
 const {google, GoogleApis} = require('googleapis');
-const directory = '1LWOoQZ5d6cGFHcP5IQDF2LMlp4NWupTg';
+const directory = '1LWOoQZ5d6cGFHcP5IQDF2LMlp4NWupTg'; // id of directory you want the files uploaded in, must be shared with service account
 
-const KEYFILEPATH = './aasualberta-be6a574fbac8.json'
+const KEYFILEPATH = './aasualberta-be6a574fbac8.json' // paste path to your google services auth keyfile here
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const auth = new google.auth.GoogleAuth({
     keyFile: KEYFILEPATH,
