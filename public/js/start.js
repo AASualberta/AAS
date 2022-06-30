@@ -4,7 +4,7 @@ const startbutton = document.getElementById("start_button");
 const submitbutton = document.getElementById("signupformbutton");
 const statustext = document.getElementById("status_text");
 
-let progress = 10;
+let progress = 0;
 
 socket.on('updateProgress', () => {
 	let str;

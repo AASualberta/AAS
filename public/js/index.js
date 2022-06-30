@@ -8,8 +8,6 @@
   const paramsbutton = document.getElementById("params");
 
   var bpm;
-  // const socket = io();
-  // var first = true;
   var volume;
   var currentMode;
   var timeout;
@@ -19,12 +17,8 @@
   socket.on('init123', function(msg){ 
     document.getElementById("h").innerHTML = "loaded";
     document.getElementById("alert").style.visibility = "hidden";
-    // pausebutton.classList.toggle("playDisabled");
     document.getElementById("stop").disabled = false;
-    // document.getElementById("pause").disabled = false;
-    // document.getElementById("volume-control").disabled = false;
     socket.emit("restbpm", bpm);
-
     // start playing right when loaded
     socket.emit("startsocket", null);
     nextbutton.disabled = false;
@@ -45,7 +39,6 @@
 
   socket.on('next', function(msg){
     document.getElementById("h").innerHTML = currentMode;
-    //document.getElementById("msg").innerHTML = msg;
   })
 
   socket.on('reload', function(msg) {
@@ -110,18 +103,6 @@
           }
       });
   }
-/*
-  modebutton.addEventListener('change', function(){
-    if (this.checked) {
-      document.getElementById("switchtext").innerHTML = "Training Mode";
-      socket.emit("mode",0); // 0: training
-    }
-    else{
-      document.getElementById("switchtext").innerHTML = "Therapeutic Mode";
-      socket.emit("mode",1); // 1: therapeutic
-    }
-  })
-*/
   
   paramsbutton.addEventListener('click', function() {
     document.getElementById("collapseExample").classList.toggle("show");
@@ -140,11 +121,6 @@
 
   pausebutton.addEventListener('click', function(){
     pausebutton.classList.toggle("active");
-    // if (first) {
-    //   socket.emit("startsocket", null);
-    //   nextbutton.disabled = false;
-    //   first = false;
-    // }
     socket.emit("pausesocket", null);
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
@@ -172,23 +148,10 @@
     document.getElementById("beforestart").style.display = "none";
     document.getElementById("started").style.display = "block";
   }
-/*
-  formbutton.addEventListener('click', function(){
-    var x = document.getElementById("form");
-    
-    var i;
-    for (i = 0; i < x.length ;i++) {
-      bpm = x.elements[i].value;
-    }
-    document.getElementById("beforestart").style.display = "none";
-    document.getElementById("started").style.display = "block";
-    //document.getElementById("msg").innerHTML = bpm;
-    
-  })*/
+
 
 document.getElementById("volume-control").addEventListener("change", function(){
   var slideAmount = document.getElementById("volume-control").value;
-  //console.log(slideAmount);
   socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
 });

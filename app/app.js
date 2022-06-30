@@ -53,25 +53,7 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
-  // if (!user) { // if no user is signed in/up
-  //   user = ctx.request.body['username'];
-  //   var re = db.findName(ctx.request.body['username']); // check if user exists
-  //   if (re) {
-  //     user = re["name"]; // get user name
-  //     seleniumtest.loadValues(user, mode); // load action values from file
-  //   }
-  //   // add a new user to database
-  //   // if an existing user signs up again, restbpm is updated.
-  //   logfile = db.addUser(user, ctx.request.body['restbpm']);
-  //   seleniumtest.setLogFile(logfile);
-
-  //   // check if training time > 3hours
-  //   if (db.findTime(user) > 10800000){
-  //     mode = 1;
-  //     seleniumtest.setMode(1)
-  //   }
-  // }
-  // else { // if already sign in/up, prevent it to sign in/up again
+  
   drivelog = new Drive(user);
   logfile = "./log/" + user + ".log";
   seleniumtest.setLogFile(logfile);
@@ -99,8 +81,6 @@ router.get('/soundscape', async (ctx, next) => {
     await ctx.render('soundscape');
   }
   else{
-    //ctx.response.status = 400;
-    //ctx.response.body = "alert(\"You have to sign in/up first!\")";
     ctx.redirect("/");
   }
 })
@@ -126,7 +106,6 @@ router.post('/signin', async (ctx, next) => {
       // haven't signed up yet, requires to sign up first
       ctx.response.status = 400;
       ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
-      //ctx.redirect("/");
     }
   }
   else {
@@ -197,7 +176,6 @@ async function logSurvey(ctx, logfile){
 }
 
 async function restbpm(arg){
-  //console.log(arg);
   seleniumtest.restBPM(arg);
 }
 
@@ -243,11 +221,11 @@ function getHeartRateAtSignUp(){
   let startTime;
   let total = 0;
   let average = 0;
-  io.on('connection', async(socket) => {
+  io.on('connection', async(socket) => { 
     currentSocket = socket;
     currentSocket.on('getBPM', () => {
       router.post('/test', async (ctx, next) =>{
-        if (bpmUsedForAlg){
+        if (bpmUsedForAlg){ // using /test route for soundscapes page
           if (!bpm_connected){
             if (inited) {
               let str = "Timestamp: "+Date.now()+"; connected\n";
@@ -258,23 +236,22 @@ function getHeartRateAtSignUp(){
           }
           else
             if (ctx.request.body && inited) {
-              //console.log(ctx.request.body)
               seleniumtest.addBPM(ctx.request.body);
             }
         }
-        else{ // used for signup
+        else{ // // using /test route for signup
           if (firstRequest){
             startTime = Date.now();
             currentSocket.emit('updateProgress',null);
             firstRequest = false;
           }
-          if (Date.now()-startTime > 60000){
+          if (Date.now()-startTime > 60000){ // every minute
             currentSocket.emit('updateProgress',null);
             total += 1;
-            if (total > 3){
+            if (total > 3){ // after 3 minutes start averaging hr
               average+=parseInt(ctx.request.body);
             }
-            if (total==10){
+            if (total==10){ // after 10 minutes return average
               restBPM = average/7;
             }
           }
@@ -289,8 +266,6 @@ function getHeartRateAtSignUp(){
 function ioconnection(){
   io.on('connection', async (socket) => {
     currentSocket = socket;
-      //console.log(seleniumtest);
-      //await seleniumtest.init().then(()=>{
       router.post('/test', async (ctx, next) =>{
         if (!bpm_connected){
           if (inited) {
@@ -302,7 +277,6 @@ function ioconnection(){
         }
         else
           if (ctx.request.body && inited) {
-            //console.log(ctx.request.body)
             seleniumtest.addBPM(ctx.request.body);
           }
       });
@@ -318,7 +292,7 @@ io.on('connection', async (socket) => {
         //console.log(`Socket ${socket.id} disconnected.`);
       });
       if (inited) {
-        //console.log(socket.id, pause_num)
+
         if (pause_num%2 == 0) {
           socket.emit("reload", false);
         }
@@ -331,10 +305,11 @@ io.on('connection', async (socket) => {
           fs.appendFileSync(logfile, str);
           socket.emit("next", e[0]);
         });
-        //timeout(1, 0);
+        
         timer = new Timer(callbackfn, seleniumtest.timer);
         pause_num += 1;
       });
+
       socket.on("nextsocket", async (arg) => {
         let canskip = true;
         if (skipList.length < 4){
@@ -357,6 +332,7 @@ io.on('connection', async (socket) => {
           timer.restart();
         }
       });
+
       socket.on("stopsocket", async (arg) => {
         if (arg){ // timeout
           let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
@@ -364,19 +340,16 @@ io.on('connection', async (socket) => {
         }
         stop(arg);
       });
-      /*
-      socket.on('disconnect', () => {
-        stop();
-          console.log("Timestamp: ", Date.now(),' user disconnected');
-      });
-      */
+      
       socket.on('restbpm', async (arg)=> {
         restbpm(arg);
       })
+
       socket.on("mode", async (arg) => {
         mode = arg;
         seleniumtest.setMode(mode);
       })
+
       socket.on("pausesocket", async (arg) => {
         pause_num += 1;
         //console.log(pause_num)
@@ -387,6 +360,7 @@ io.on('connection', async (socket) => {
           timer.resume();
         }
       });
+
       socket.on("changeVolume", async (arg) => {
         var change_nums = Math.floor(parseFloat(arg) / 3);
         seleniumtest.changeVolume(change_nums);
@@ -425,7 +399,6 @@ io.on('connection', async (socket) => {
             fs.appendFileSync(logfile, str);
             socket.emit("next", e[0]);
             seleniumtest.getVolume().then((v) =>{
-              //console.log("get volume:", v);
               socket.emit("volume", v);
             });
             
@@ -452,7 +425,6 @@ io.on('connection', async (socket) => {
               }
               else{
                 seleniumtest.getVolume().then((v) =>{
-                  //console.log("get volume:", v);
                   socket.emit("volume", v);
                 });
                 first = false;
