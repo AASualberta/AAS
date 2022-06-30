@@ -4,7 +4,7 @@ const startbutton = document.getElementById("start_button");
 const submitbutton = document.getElementById("signupformbutton");
 const statustext = document.getElementById("status_text");
 
-let progress = 0;
+let progress = 10;
 
 socket.on('updateProgress', () => {
 	let str;
@@ -38,3 +38,13 @@ startbutton.addEventListener("click", function(){
 	document.getElementById("status").style.display = "block";
 	socket.emit('getBPM', null);
 });
+
+function setRequired(id){
+	document.getElementById(id).required=true;
+}
+
+function removeRequired(id){
+	if(document.getElementById(id).required == true){
+		document.getElementById(id).required=false;
+	}
+}

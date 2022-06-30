@@ -43,10 +43,30 @@
     <div class="col-xl-10">
       <div class="center ">
         <form id="form" class="center" action="/signup" method="post">
-            <label for="restbpm" class="center">User Name: (You must remember this to start sessions)</label>
+            <label for="restbpm" class="center"><b>Create a Username:</b> (You must remember this to start sessions)</label>
             <input required type="text" id="username" name="username" style="width: 100%" ><br><br>
-            <br><br>
-            <label for="hrbutton" class="center">In order to get your resting heart rate, please connect to the pulse sensor. Once you are ready click start. Try to relax for a while as this process takes about 10 minutes.</label>
+            <br><br><br>
+            <h5>Survey</h5><br>
+          <div class="text-left">
+            <b>Age:</b><br>
+            <input type="radio" id="age" name="age" value="custom" onclick="setRequired('agetext');"> <input type="text" name="agetext" id="agetext"/><br>
+            <input type="radio" id="noageanswer" name="age" value="Prefer not to answer" onclick="removeRequired('agetext');" checked> Prefer not to answer<br><br>
+          </div>
+          <div class="text-left">
+            <b>Occupation:</b><br>
+            <input type="radio" id="occupation" name="occupation" value="custom" onclick="setRequired('occupationtext');"> <input type="text" name="occupationtext" id="occupationtext"/><br>
+            <input type="radio" id="nooccupationanswer" name="occupation" value="Prefer not to answer" onclick="removeRequired('occupationtext');" checked> Prefer not to answer<br><br>
+          </div>
+          <div class="text-left">
+            <b>Gender:</b><br>
+            <input type="radio" id="maleanswer" name="gender" value="Male" onclick="removeRequired('gendertext');"> Male<br>
+            <input type="radio" id="femaleanswer" name="gender" value="Female" onclick="removeRequired('gendertext');"> Female<br>
+            <input type="radio" id="gender" name="gender" value="custom" onclick="setRequired('gendertext');"> Other: <input type="text" name="gendertext" id="gendertext"/><br>
+            <input type="radio" id="nogenderanswer" name="gender" value="Prefer not to answer" onclick="removeRequired('gendertext');" checked> Prefer not to answer<br><br>
+          </div>
+            <br><br><br>
+            <h5>Resting heart rate</h5>
+            <label for="hrbutton" class="center">In order to get your resting heart rate, please connect to the pulse sensor. Once you are ready click start. Try to relax for a while as this process takes 10 minutes.</label>
         <div class="center" id="status" style="display: none;">
           <h4 id="status_text">Progress: Not connected </h4>
         </div>

@@ -13,6 +13,8 @@ const fs = require('fs');
 
 const db = require('./db.js')
 
+const Drive = require('./drivelog');
+
 const app = module.exports = new Koa();
 const router = koaRouter();
 
@@ -30,6 +32,7 @@ var pause_num = 0;
 var inited = false;
 var playing = false;
 
+var drivelog;
 var logfile;
 var user = null;
 var isAdmin = false;
@@ -69,6 +72,7 @@ router.post('/soundscape', async (ctx, next) => {
   //   }
   // }
   // else { // if already sign in/up, prevent it to sign in/up again
+  drivelog = new Drive(user);
   logfile = "./log/" + user + ".log";
   seleniumtest.setLogFile(logfile);
   
@@ -134,6 +138,7 @@ router.post('/signin', async (ctx, next) => {
 router.post('/end', async(ctx, next) => {
   let str = "Timestamp: "+Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
   fs.appendFileSync(logfile, str);
+  await logToDrive();
   process.exit();
 })
 
@@ -144,6 +149,7 @@ router.get('/end', async(ctx, next) => {
 router.post('/signup', async(ctx, next) => {
     // add a new user to database
     newUserLogFile = db.addUser(ctx.request.body['username'], restBPM);
+    logSurvey(ctx, newUserLogFile);
     let str = "resting heart rate: " + restBPM + "\n";
     fs.appendFileSync(newUserLogFile, str);
     ctx.response.status = 200;
@@ -166,18 +172,55 @@ async function initialize(){
       inited = true;
     })
 }
-/*
-router.post('/test', async (ctx, next) =>{
-  if (ctx.request.body["bpm"] > 0) {
-    seleniumtest.addBPM(ctx.request.body["bpm"]);
-  }
-});
-*/
 
+async function logSurvey(ctx, logfile){
+  let answers = "\nSurvey Answers:\n";
+  if (ctx.request.body['age'] == "custom"){
+    answers += ("Age: " + ctx.request.body['agetext'] + "\n");
+  }
+  else{
+    answers += ("Age: " + ctx.request.body['age'] + "\n");
+  }
+  if (ctx.request.body['occupation'] == "custom"){
+    answers += ("Occupation: " + ctx.request.body['occupationtext'] + "\n");
+  }
+  else{
+    answers += ("Occupation: " + ctx.request.body['occupation'] + "\n");
+  }
+  if (ctx.request.body['gender'] == "custom"){
+    answers += ("Gender: " + ctx.request.body['gendertext'] + "\n");
+  }
+  else{
+    answers += ("Gender: " + ctx.request.body['gender'] + "\n");
+  }
+  fs.appendFileSync(logfile, answers);
+}
 
 async function restbpm(arg){
   //console.log(arg);
   seleniumtest.restBPM(arg);
+}
+
+async function logToDrive(){
+  fileId = db.getDriveId(user);
+  if (fileId == -1){ // user log file not in drive yet
+    await drivelog.createAndUploadFile().then((id) => {
+      if (id == -1){
+        console.log("Failed to create log in drive");
+      }
+      else{
+        db.setDriveId(user,id);
+      }
+    });
+
+  }
+  else{ // user log file exists in 
+    await drivelog.updateFile(fileId).then((returnStatus) => {
+      if (returnStatus == -1){
+        console.log("Failed to update log in drive");
+      }
+    })
+  }
 }
 
 
