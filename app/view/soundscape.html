@@ -9,20 +9,23 @@
   <div class="vertical-center center row align-items-center" id="started"  style="display:block;">
     <div>
       <h3 id="h">Loading...</h3>
+        <div id="alert" class="alert alert-info col-3 center" role="alert" style="visibility:visible;">
+          Please ensure pulse sensor is connected
+        </div>
       <a href="#" class="play playDisabled" id="pause"></a>
 
     </div>
     <div class="row align-items-center">
       <div class="col-3"></div>
       <div class="col-6">
-        <button id="next" type="button" class="btn btn-block" disabled>Switch</button>  
+        <button id="next" type="button" class="btn btn-block" disabled>Play Different Sound</button>  
       </div>
       <div class="col-3"></div>
     </div>
     <div class="row justify-content-center" style="margin-top: 10px;">
       <div class="col-3"></div>
       <div class="col-6">
-        <button id="stop" type="button" class="btn btn-block" disabled>Stop</button> 
+        <input id="stop" type="button" class="btn btn-block" onclick="location.href='/end'" value="End Session" disabled> 
       </div>
       <div class="col-3"></div>
     </div>

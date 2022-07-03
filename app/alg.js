@@ -142,7 +142,13 @@ class Algorithm{
 		//this.previous = this.current;
 		if (this.mode == 0) { //training
 			m = "training";
-			this.current = this.epsilonGreedy(pressed);
+			if (pressed){
+				this.current = this.Greedy(pressed, rew, false);
+			}
+			else{
+				this.current = this.epsilonGreedy();
+			}
+			
 		}
 		else{ //therapeutic
 			m = "therapeutic";
@@ -176,7 +182,7 @@ class Algorithm{
 		return current;
 	}
 
-	epsilonGreedy(pressed){
+	epsilonGreedy(){
 		var current = this.current;
 		// epsilon greedy
 		while (true) {
@@ -189,9 +195,7 @@ class Algorithm{
 				}
 				prob += this.policy[i];
 			}
-			if (!pressed || current != this.current) {
-				break;
-			}
+			break;
 		}
 		return current;
 	}

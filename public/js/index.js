@@ -1,30 +1,44 @@
   const nextbutton = document.getElementById("next");
-  const stopbutton = document.getElementById("stop");
+  const stopbutton = document.getElementById("stop"); 
   const formbutton = document.getElementById("formbutton");
   const modebutton = document.getElementsByName("mode");
   const pausebutton = document.getElementById("pause");
   const title = document.getElementById("h");
+  const alert = document.getElementById("alert");
   const paramsbutton = document.getElementById("params");
 
   var bpm;
-  //const socket = io();
-  var first = true;
   var volume;
+  var currentMode;
+  var timeout;
 
 
+  // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
-    console.log(msg)
     document.getElementById("h").innerHTML = "loaded";
-    pausebutton.classList.toggle("playDisabled");
+    document.getElementById("alert").style.visibility = "hidden";
     document.getElementById("stop").disabled = false;
+    socket.emit("restbpm", bpm);
+    // start playing right when loaded
+    socket.emit("startsocket", null);
+    nextbutton.disabled = false;
+    pausebutton.classList.toggle("playDisabled");
+    pausebutton.classList.toggle("active");
     document.getElementById("pause").disabled = false;
     document.getElementById("volume-control").disabled = false;
-    socket.emit("restbpm", bpm);
   });
 
+  socket.on('setMode', function(msg){
+    if (msg == 0){
+      currentMode = "Discovery Mode"
+    }
+    else{
+      currentMode = "Therapeutic Mode"
+    }
+  })
+
   socket.on('next', function(msg){
-    document.getElementById("h").innerHTML = "Playing";
-    //document.getElementById("msg").innerHTML = msg;
+    document.getElementById("h").innerHTML = currentMode;
   })
 
   socket.on('reload', function(msg) {
@@ -32,7 +46,7 @@
     console.log(msg)
     if (msg) {
       first = false;
-      document.getElementById("h").innerHTML = "Playing";
+      document.getElementById("h").innerHTML = currentMode;
       pausebutton.classList.toggle("active");
     }
     else{
@@ -65,6 +79,16 @@
     }
   })
 
+  socket.on('surfing', function(msg){
+    document.getElementById("alert").innerHTML = "Stop surfing and listen!"
+    document.getElementById("alert").style.visibility = "visible";
+    setTimeout(hideAlert, 5000);
+  })
+
+  function hideAlert(){
+    document.getElementById("alert").style.visibility = "hidden";
+  }
+
   var prev = null;
   for (var i = 0; i < modebutton.length; i++) {
       modebutton[i].addEventListener('change', function() {
@@ -79,18 +103,6 @@
           }
       });
   }
-/*
-  modebutton.addEventListener('change', function(){
-    if (this.checked) {
-      document.getElementById("switchtext").innerHTML = "Training Mode";
-      socket.emit("mode",0); // 0: training
-    }
-    else{
-      document.getElementById("switchtext").innerHTML = "Therapeutic Mode";
-      socket.emit("mode",1); // 1: therapeutic
-    }
-  })
-*/
   
   paramsbutton.addEventListener('click', function() {
     document.getElementById("collapseExample").classList.toggle("show");
@@ -109,22 +121,22 @@
 
   pausebutton.addEventListener('click', function(){
     pausebutton.classList.toggle("active");
-    if (first) {
-      socket.emit("startsocket", null);
-      nextbutton.disabled = false;
-      first = false;
+    socket.emit("pausesocket", null);
+    if (title.innerHTML == currentMode) {
+      title.innerHTML = "Paused";
+      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
     }
     else{
-      socket.emit("pausesocket", null);
-      if (title.innerHTML == "Playing") {
-        title.innerHTML = "Pause";
-      }
-      else{
-        title.innerHTML = "Playing";
-      }
+      title.innerHTML = currentMode;
+      clearTimeout(timeout);
     }
-
   })
+
+  function timeoutFunction(){
+    title.innerHTML = "SESSION TIMED OUT!"
+    socket.emit("stopsocket", true);
+    socket.close();
+  }
 
   function formbtn(){
     var x = document.getElementById("form");
@@ -136,23 +148,10 @@
     document.getElementById("beforestart").style.display = "none";
     document.getElementById("started").style.display = "block";
   }
-/*
-  formbutton.addEventListener('click', function(){
-    var x = document.getElementById("form");
-    
-    var i;
-    for (i = 0; i < x.length ;i++) {
-      bpm = x.elements[i].value;
-    }
-    document.getElementById("beforestart").style.display = "none";
-    document.getElementById("started").style.display = "block";
-    //document.getElementById("msg").innerHTML = bpm;
-    
-  })*/
+
 
 document.getElementById("volume-control").addEventListener("change", function(){
   var slideAmount = document.getElementById("volume-control").value;
-  //console.log(slideAmount);
   socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
 });

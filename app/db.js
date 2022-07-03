@@ -21,7 +21,7 @@ class Database {
 		var filename = "./log/" + name + ".log";
 		if (!this.findName(name)) { // add new user
 			this.db.get('users')
-  			.push({ name: name, restbpm: restbpm, totaltime: 0})
+  			.push({ name: name, restbpm: restbpm, totaltime: 0, driveid: -1})
   			.write()
 
 		}
@@ -45,6 +45,21 @@ class Database {
 
 	findTime(name){
 		return this.db.get('users').find({name: name}).value().totaltime;
+	}
+
+	getRestBPM(name){
+		return this.db.get('users').find({name: name}).value().restbpm;
+	}
+
+	getDriveId(name){
+		return this.db.get('users').find({name: name}).value().driveid;
+	}
+
+	setDriveId(name, id){
+		this.db.get('users')
+		.find({ name: name})
+		.assign({driveid: id})
+		.write()
 	}
 }
 

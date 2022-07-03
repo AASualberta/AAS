@@ -1,0 +1,34 @@
+<script src="js/jquery.min.js"></script>
+<script src="js/socket.io.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+<div class="container">
+  <div class="vertical-center center row align-items-center bg_gray" id="endmessage">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center ">
+        <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+        <form id="form" class="center" method="post" target="dummyframe">
+            <label for="mood" class="center">Before terminating, please give a short description of how you feel after the session:</label>
+            <input required type="text" id="endmood" name="endmood" placeholder="Write something here..." style="width: 100%"><br><br>
+        <div class="center" >
+          <input id="formbutton" type="submit" class="btn btn-block" value="Submit"> 
+        </div>
+        </form>
+      </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+
+  <div class="vertical-center center row align-items-center bg_gray" id="terminated" style="display: none;">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+      <div class="center ">
+        <h2 id="TerminationMessage">Session terminated</h2>
+      </div>
+    </div>
+    </div class="col-1"></div>
+  </div>
+</div>
+
+<script src="js/end.js"></script>
