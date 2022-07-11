@@ -3,6 +3,9 @@ const fs = require('fs');
 const readline = require('readline');
 const Stream = require('stream');
 
+/*
+ * Return index of sound with highest value
+ */
 function indexOfMax(arr) {
     if (arr.length === 0) {
         return -1;
@@ -21,6 +24,9 @@ function indexOfMax(arr) {
     return maxIndex;
 }
 
+/*
+ * Return action values list from log file
+ */
 function readActionValuesFromFile(filename) {
 	if (!fs.existsSync(filename)) {
 		console.log("doesn't exist")
@@ -36,6 +42,9 @@ function readActionValuesFromFile(filename) {
 	}
 }
 
+/*
+ * Return string rep of action values
+ */
 function actionValueLog(values, num){
 	var output = '[';
 	//console.log(values)
@@ -50,11 +59,9 @@ function actionValueLog(values, num){
 class Algorithm{
 
 	constructor(num){
-		this.num = num;
+		this.num = num; // num of sounds
 		this.values = []; // action values
 		this.policy = []; // probability of choosing an action
-		//this.max = 30;
-		//this.min = -30;
 		this.epsilon = 1;
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
@@ -68,7 +75,6 @@ class Algorithm{
 		this.restbpm = 60; //set default restbpm
 		this.upperbound = this.restbpm + 5; //default upper bound of restbpm
 		this.current = Math.floor(Math.random() * this.num);
-		//this.previous = this.num - 1;
 		this.step_size = 0.7;
 		this.mode = 0; // 0: training, 1: therapeutic
 		this.msg = "; value_function: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
@@ -76,6 +82,7 @@ class Algorithm{
 		this.started = 0;
 		this.gamma = 0.9;
 	}
+
 	getMessage(){
 		return this.msg;
 	}
@@ -100,7 +107,6 @@ class Algorithm{
 		var maxIndex = indexOfMax(this.values);
 		if (this.values.every(i => i===0)) { // if action values are all zeros
 			this.policy = Array(this.num).fill(1.0/this.num); // same prob for all actions
-			//console.log(this.policy);
 		}
 		else{
 			for (var j = 0; j < this.num; j++) {
@@ -118,7 +124,6 @@ class Algorithm{
 		var values = readActionValuesFromFile(filename);
 		if (values) {
 			this.values = values;
-			//console.log(this.values)
 			this.loadPolicy();
 		}
 		this.msg = "; value_function: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(mode);
@@ -132,14 +137,14 @@ class Algorithm{
 		this.epsilon = epsilon;
 	}
 
+	/*
+ 	* Return index of next sound to be played
+ 	*/
 	generateNext(d, mode, pressed){
-
 		this.mode = mode;
 		var m = null;
 		var rew = this.generateReward(d, pressed);
-		//console.log("reward", rew);
 		this.update(rew);
-		//this.previous = this.current;
 		if (this.mode == 0) { //training
 			m = "training";
 			if (pressed){
@@ -170,7 +175,7 @@ class Algorithm{
 		}
 		var current;
 
-		if (rew<0 || pressed) {
+		if (rew<0 || pressed) { // choose highest vlaue that isn't current
 			var temp = this.values[this.current];
 			this.values[this.current] = -Infinity;
 			current = indexOfMax(this.values);
@@ -200,6 +205,9 @@ class Algorithm{
 		return current;
 	}
 
+	/*
+ 	* Update action values and policy
+ 	*/
 	update(rew){
 		var s = this.values[this.current];
 		// update state action value
@@ -222,6 +230,9 @@ class Algorithm{
 		this.upperbound = this.restbpm + 5; // upper bound of the restbpm
 	}
 
+	/*
+ 	* Return reward for previous sound
+ 	*/
 	generateReward(d, pressed){
 		var bpm = d; 
 		if (this.previous_bpm == -1) {

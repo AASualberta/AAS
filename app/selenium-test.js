@@ -20,7 +20,7 @@ const allSounds = [['White Noise & Co.', 'https://mynoise.net/NoiseMachines/whit
                 ['White Rain', 'https://mynoise.net/NoiseMachines/whiteRainNoiseGenerator.php'],
                 ['Grey Noise', 'https://mynoise.net/NoiseMachines/greyNoiseGenerator.php'],
                 ['88 Keys', 'https://mynoise.net/NoiseMachines/acousticPianoSoundscapeGenerator.php'],
-                ['Cat Purr', 'https://mynoise.net/NoiseMachines/catPurrNoiseGenerator.php'],
+                ['Furry Friend', 'https://mynoise.net/NoiseMachines/catPurrNoiseGenerator.php'],
                 ['Rainforest', 'https://mynoise.net/NoiseMachines/rainforestNoiseGenerator.php'],
                 ['Primeval Forest', 'https://mynoise.net/NoiseMachines/primevalEuropeanForestSoundscapeGenerator.php'],
                 ['Summer Night', 'https://mynoise.net/NoiseMachines/ultrasonicNoiseGenerator.php'],
@@ -169,7 +169,7 @@ async startFirstSound(){
             //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
         return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
-            return await ele.getText().then((e)=>{
+            return await ele.getAttribute("textContent").then((e)=>{
                 return e;
             });
         });
@@ -177,7 +177,8 @@ async startFirstSound(){
     this.select_msg = alg.getMessage();
     //console.log(this.select_msg)
     return msg.then((e)=>{
-        return [e,"; soundscape: "+ e + "; soundscape index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString() + this.select_msg]
+        let name = e.trim();
+        return [name,"; soundscape: "+ name + "; value index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString() + this.select_msg]
     })
 }
 
@@ -205,7 +206,7 @@ async playNext(mode, pressed){
                     //console.log("unmute...");
                 });
                 return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
-                   return await el.getText().then((value)=>{
+                   return await el.getAttribute("textContent").then((value)=>{
                         //console.log("Switched to "+value);
                         //el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         return value;
@@ -216,7 +217,8 @@ async playNext(mode, pressed){
         });
     });
     return msg.then((e)=>{
-        return [e[0],"; soundscape: "+e[0] + "; soundscape index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+        let name = e[0].trim();
+        return [name,"; soundscape: "+ name + "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }
 

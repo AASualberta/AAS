@@ -232,6 +232,9 @@ function getHeartRateAtSignUp(){
               fs.appendFileSync(logfile, str);
               currentSocket.emit("init123", "world");
               bpm_connected = true;
+              if (ctx.request.body){
+                seleniumtest.addBPM(ctx.request.body);
+              }
             }
           }
           else
@@ -273,6 +276,9 @@ function ioconnection(){
             fs.appendFileSync(logfile, str);
             socket.emit("init123", "world");
             bpm_connected = true;
+            if (ctx.request.body){
+              seleniumtest.addBPM(ctx.request.body);
+            }
           }
         }
         else
