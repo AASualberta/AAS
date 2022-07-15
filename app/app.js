@@ -232,6 +232,9 @@ function getHeartRateAtSignUp(){
               fs.appendFileSync(logfile, str);
               currentSocket.emit("init123", "world");
               bpm_connected = true;
+              if (ctx.request.body){
+                seleniumtest.addBPM(ctx.request.body);
+              }
             }
           }
           else
@@ -246,6 +249,7 @@ function getHeartRateAtSignUp(){
             firstRequest = false;
           }
           if (Date.now()-startTime > 60000){ // every minute
+            startTime = Date.now()
             currentSocket.emit('updateProgress',null);
             total += 1;
             if (total > 3){ // after 3 minutes start averaging hr
@@ -273,6 +277,9 @@ function ioconnection(){
             fs.appendFileSync(logfile, str);
             socket.emit("init123", "world");
             bpm_connected = true;
+            if (ctx.request.body){
+              seleniumtest.addBPM(ctx.request.body);
+            }
           }
         }
         else
