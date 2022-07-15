@@ -248,14 +248,14 @@ function getHeartRateAtSignUp(){
             currentSocket.emit('updateProgress',null);
             firstRequest = false;
           }
-          if (Date.now()-startTime > 60000){ // every minute
+          if (Date.now()-startTime > 30000){ // every 30 seconds
             startTime = Date.now()
             currentSocket.emit('updateProgress',null);
             total += 1;
-            if (total > 3){ // after 3 minutes start averaging hr
+            if (total > 3){ // after 1.5 minutes start averaging hr
               average+=parseInt(ctx.request.body);
             }
-            if (total==10){ // after 10 minutes return average
+            if (total==10){ // after 5 minutes return average
               restBPM = average/7;
             }
           }
