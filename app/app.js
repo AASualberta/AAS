@@ -249,6 +249,7 @@ function getHeartRateAtSignUp(){
             firstRequest = false;
           }
           if (Date.now()-startTime > 60000){ // every minute
+            startTime = Date.now()
             currentSocket.emit('updateProgress',null);
             total += 1;
             if (total > 3){ // after 3 minutes start averaging hr
