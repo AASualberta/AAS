@@ -85,6 +85,10 @@ async changeEpsilon(epsilon) {
     alg.setEpsilon(epsilon);
 }
 
+async setPrevBPM(){
+    alg.setPrevBPM(this.avg_bpm);
+}
+
 async changeVolume(change_num){
     var self = this;
     var key;
@@ -178,7 +182,7 @@ async startFirstSound(){
     //console.log(this.select_msg)
     return msg.then((e)=>{
         let name = e.trim();
-        return [name,"; soundscape: "+ name + "; value index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString() + this.select_msg]
+        return [name,"; soundscape: "+ name + "; value index: "+ ind.toString() + this.select_msg]
     })
 }
 

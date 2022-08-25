@@ -10,7 +10,8 @@
   var bpm;
   var volume;
   var currentMode;
-  var timeout;
+  var skiptimeout;
+  var setprevtimeout;
 
 
   // called when sounds are loaded and system is ready
@@ -21,6 +22,7 @@
     socket.emit("restbpm", bpm);
     // start playing right when loaded
     socket.emit("startsocket", null);
+    setprevtimeout = setTimeout(setPrevBpm, 60000); // timeout after 1 minute (900000 ms) of first sound to set previous bpm in alg
     nextbutton.disabled = false;
     pausebutton.classList.toggle("playDisabled");
     pausebutton.classList.toggle("active");
@@ -111,6 +113,9 @@
 
   nextbutton.addEventListener('click', function() {
     socket.emit("nextsocket", null);
+    if (setprevtimeout){
+      clearTimeout(setprevtimeout);
+    }
   })
 
 
@@ -124,11 +129,11 @@
     socket.emit("pausesocket", null);
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
-      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
+      skiptimeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
     }
     else{
       title.innerHTML = currentMode;
-      clearTimeout(timeout);
+      clearTimeout(skiptimeout);
     }
   })
 
@@ -136,6 +141,10 @@
     title.innerHTML = "SESSION TIMED OUT!"
     socket.emit("stopsocket", true);
     socket.close();
+  }
+
+  function setPrevBpm(){
+    socket.emit("setprevious");
   }
 
   function formbtn(){

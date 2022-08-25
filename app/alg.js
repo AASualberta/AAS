@@ -230,14 +230,16 @@ class Algorithm{
 		this.upperbound = this.restbpm + 5; // upper bound of the restbpm
 	}
 
+	setPrevBPM(d){
+		this.previous_bpm = d;
+		console.log("prev set to " + d);
+	}
+
 	/*
  	* Return reward for previous sound
  	*/
 	generateReward(d, pressed){
 		var bpm = d; 
-		if (this.previous_bpm == -1) {
-			this.previous_bpm = this.upperbound;
-		}
 		var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
 		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
 		var rew = Math.max(rate_dif, rest_dif);

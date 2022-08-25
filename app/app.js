@@ -9,6 +9,7 @@ const koaBody = require('koa-body');
 const render = require('koa-ejs');
 const seleniumtest = require('./selenium-test.js');
 const json = require('json')
+//const koajson = require('koa-json');
 const fs = require('fs');
 
 const db = require('./db.js')
@@ -227,22 +228,43 @@ function getHeartRateAtSignUp(){
       router.post('/test', async (ctx, next) =>{
         if (bpmUsedForAlg){ // using /test route for soundscapes page
           if (!bpm_connected){
-            if (inited) {
+            try{
+              let body = JSON.parse(ctx.request.body);
+              if (body.hasOwnProperty("command")){
+                if (body.command == "match"){
+                  ctx.body = {"username": user};
+                  bpm_connected = true;
+                }
+              }
+            }
+            catch(e){
+              console.log(e);
+            }
+            if (inited && bpm_connected) {
               let str = "Timestamp: "+Date.now()+"; connected\n";
               fs.appendFileSync(logfile, str);
               currentSocket.emit("init123", "world");
-              bpm_connected = true;
-              if (ctx.request.body){
-                seleniumtest.addBPM(ctx.request.body);
+            }
+          }
+          else{ // watch already connected
+            if (inited) {
+              try{
+                let body = JSON.parse(ctx.request.body);
+                if (body.hasOwnProperty("heartrate")){
+                  seleniumtest.addBPM(body.heartrate);
+                  if (firstRequest){
+                    seleniumtest.setPrevBPM(body.heartrate);
+                    firstRequest = false;
+                  }
+                }
+              }
+              catch(e){
+                console.log(e);
               }
             }
           }
-          else
-            if (ctx.request.body && inited) {
-              seleniumtest.addBPM(ctx.request.body);
-            }
         }
-        else{ // // using /test route for signup
+        else{ // using /test route for signup
           if (firstRequest){
             startTime = Date.now();
             currentSocket.emit('updateProgress',null);
@@ -257,6 +279,7 @@ function getHeartRateAtSignUp(){
             }
             if (total==10){ // after 5 minutes return average
               restBPM = average/7;
+              seleniumtest.setPrevBPM(restBPM); // set previous bpm in alg
             }
           }
         }
@@ -272,23 +295,40 @@ function ioconnection(){
     currentSocket = socket;
       router.post('/test', async (ctx, next) =>{
         if (!bpm_connected){
-          if (inited) {
+          try{
+            let body = JSON.parse(ctx.request.body);
+            if (body.hasOwnProperty("command")){
+              if (body.command == "match"){
+                ctx.body = {"username": user};
+                bpm_connected = true;
+              }
+            }
+          }
+          catch(e){
+            console.log(e);
+          }
+          if (inited && bpm_connected) {
             let str = "Timestamp: "+Date.now()+"; connected\n";
             fs.appendFileSync(logfile, str);
             socket.emit("init123", "world");
-            bpm_connected = true;
-            if (ctx.request.body){
-              seleniumtest.addBPM(ctx.request.body);
+          }
+        }
+        else{ // watch already connected
+          if (inited) {
+            try{
+              let body = JSON.parse(ctx.request.body);
+              if (body.hasOwnProperty("heartrate")){
+                seleniumtest.addBPM(body.heartrate);
+              }
+            }
+            catch(e){
+              console.log(e);
             }
           }
         }
-        else
-          if (ctx.request.body && inited) {
-            seleniumtest.addBPM(ctx.request.body);
-          }
       });
       socket.emit("isAdmin", isAdmin);
-      socket.emit("setMode", mode);  
+      socket.emit("setMode", mode); 
   }); 
 }
 
@@ -383,6 +423,10 @@ io.on('connection', async (socket) => {
         seleniumtest.changeAlpha(parseFloat(arg));
         let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
         fs.appendFileSync(logfile, str);
+      })
+
+      socket.on("setprevious", async() => {
+        seleniumtest.setPrevBPM();
       })
 
       function callbackfn(){
