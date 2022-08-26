@@ -45,7 +45,7 @@
 
   socket.on('reload', function(msg) {
     pausebutton.classList.toggle("playDisabled");
-    console.log(msg)
+    console.log("reload" + msg)
     if (msg) {
       first = false;
       document.getElementById("h").innerHTML = currentMode;
@@ -147,16 +147,17 @@
     socket.emit("setprevious");
   }
 
-  function formbtn(){
-    var x = document.getElementById("form");
+  // ????
+  // function formbtn(){
+  //   var x = document.getElementById("form");
     
-    var i;
-    for (i = 0; i < x.length ;i++) {
-      bpm = x.elements[i].value;
-    }
-    document.getElementById("beforestart").style.display = "none";
-    document.getElementById("started").style.display = "block";
-  }
+  //   var i;
+  //   for (i = 0; i < x.length ;i++) {
+  //     bpm = x.elements[i].value;
+  //   }
+  //   document.getElementById("beforestart").style.display = "none";
+  //   document.getElementById("started").style.display = "block";
+  // }
 
 
 document.getElementById("volume-control").addEventListener("change", function(){

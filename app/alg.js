@@ -29,7 +29,7 @@ function indexOfMax(arr) {
  */
 function readActionValuesFromFile(filename) {
 	if (!fs.existsSync(filename)) {
-		console.log("doesn't exist")
+		console.log("logfile doesn't exist")
 		return null;
 	}
 	var lines = fs.readFileSync(filename, 'utf-8').split('\n');

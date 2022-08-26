@@ -9,7 +9,6 @@ const koaBody = require('koa-body');
 const render = require('koa-ejs');
 const seleniumtest = require('./selenium-test.js');
 const json = require('json')
-//const koajson = require('koa-json');
 const fs = require('fs');
 
 const db = require('./db.js')
@@ -251,11 +250,9 @@ function getHeartRateAtSignUp(){
               try{
                 let body = JSON.parse(ctx.request.body);
                 if (body.hasOwnProperty("heartrate")){
+                  console.log(body.heartrate);
                   seleniumtest.addBPM(body.heartrate);
-                  if (firstRequest){
-                    seleniumtest.setPrevBPM(body.heartrate);
-                    firstRequest = false;
-                  }
+                  ctx.status = 200;
                 }
               }
               catch(e){
@@ -265,6 +262,16 @@ function getHeartRateAtSignUp(){
           }
         }
         else{ // using /test route for signup
+          try{
+            let body = JSON.parse(ctx.request.body);
+            if (body.hasOwnProperty("heartrate")){
+              console.log(body.heartrate);
+              ctx.status = 200;
+            }
+          }
+          catch(e){
+            console.log(e);
+          }
           if (firstRequest){
             startTime = Date.now();
             currentSocket.emit('updateProgress',null);
@@ -318,7 +325,9 @@ function ioconnection(){
             try{
               let body = JSON.parse(ctx.request.body);
               if (body.hasOwnProperty("heartrate")){
+                console.log(body.heartrate);
                 seleniumtest.addBPM(body.heartrate);
+                ctx.status = 200;
               }
             }
             catch(e){
@@ -333,181 +342,182 @@ function ioconnection(){
 }
 
 io.on('connection', async (socket) => {
-      //console.log(`Socket ${socket.id} connected. pause_num:`, pause_num);
+  //console.log(`Socket ${socket.id} connected. pause_num:`, pause_num);
 
-      socket.on('disconnect', () => {
-        //console.log(`Socket ${socket.id} disconnected.`);
-      });
-      if (inited) {
+  socket.on('disconnect', () => {
+    //console.log(`Socket ${socket.id} disconnected.`);
+  });
 
-        if (pause_num%2 == 0) {
-          socket.emit("reload", false);
-        }
-        else socket.emit("reload", true);
+  if (inited) {
+
+    if (pause_num%2 == 0) {
+      socket.emit("reload", false);
+    }
+    else socket.emit("reload", true);
+  }
+
+  socket.on("startsocket", async (arg) => {
+    await seleniumtest.startFirstSound().then((e)=>{
+      let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
+      fs.appendFileSync(logfile, str);
+      socket.emit("next", e[0]);
+    });
+    
+    timer = new Timer(callbackfn, seleniumtest.timer);
+    pause_num += 1;
+  });
+
+  socket.on("nextsocket", async (arg) => {
+    let canskip = true;
+    if (skipList.length < 4){
+      skipList.push(Date.now());
+    }
+    else{
+      if ((Date.now()-skipList[0]) > 600000){
+        skipList.shift(); // remove skip if it has been more than 10 minutes
+        skipList.push(Date.now());
       }
+      else{
+        socket.emit('surfing', null); // alert using he is skipping too much
+        canskip = false;
+      }
+    }
+    if (canskip){
+      if (pause_num%2 == 0) {
+        timer.resume();
+      }
+      timer.restart();
+    }
+  });
 
-      socket.on("startsocket", async (arg) => {
-        await seleniumtest.startFirstSound().then((e)=>{
-          let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
-          fs.appendFileSync(logfile, str);
-          socket.emit("next", e[0]);
+  socket.on("stopsocket", async (arg) => {
+    if (arg){ // timeout
+      let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
+      fs.appendFileSync(logfile, str);
+    }
+    stop(arg);
+  });
+  
+  socket.on('restbpm', async (arg)=> {
+    restbpm(arg);
+  })
+
+  socket.on("mode", async (arg) => {
+    mode = arg;
+    seleniumtest.setMode(mode);
+  })
+
+  socket.on("pausesocket", async (arg) => {
+    pause_num += 1;
+    //console.log(pause_num)
+    if (pause_num%2 == 0) {
+      timer.pause();
+    }
+    else{
+      timer.resume();
+    }
+  });
+
+  socket.on("changeVolume", async (arg) => {
+    var change_nums = Math.floor(parseFloat(arg) / 3);
+    seleniumtest.changeVolume(change_nums);
+  });
+
+  socket.on("epsilon", async (arg) =>{
+    seleniumtest.changeEpsilon(parseFloat(arg));
+    let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
+    fs.appendFileSync(logfile, str);
+  })
+
+  socket.on("alpha", async(arg) => {
+    seleniumtest.changeAlpha(parseFloat(arg));
+    let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
+    fs.appendFileSync(logfile, str);
+  })
+
+  socket.on("setprevious", async() => {
+    seleniumtest.setPrevBPM();
+  })
+
+  function callbackfn(){
+      timer.switch(this, seleniumtest.timeouts)
+  }
+  
+
+  async function playNext(action){
+      var msg = seleniumtest.playNext(mode, action);
+      msg.then(async (e)=>{
+        var a = null;
+        switch(action){
+          case 1:
+            a = "next_pressed";
+            break;
+          case 0:
+            a = "switched";
+            break;
+        }
+        let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
+        fs.appendFileSync(logfile, str);
+        socket.emit("next", e[0]);
+        seleniumtest.getVolume().then((v) =>{
+          socket.emit("volume", v);
         });
         
-        timer = new Timer(callbackfn, seleniumtest.timer);
-        pause_num += 1;
-      });
+      })
+  }
+  var Timer = function(callback, delay) {
+      var timerId, start, fixedtime = delay
+      var first = true;
+      var lastStart = Date.now();
+      var total = 0
+      this.pause = function() {
+          seleniumtest.pause()
+          clearTimeout(timerId);
+          let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
+          fs.appendFileSync(logfile, str);
+          total += Date.now() - lastStart; // update time spent in training
+      };
 
-      socket.on("nextsocket", async (arg) => {
-        let canskip = true;
-        if (skipList.length < 4){
-          skipList.push(Date.now());
-        }
-        else{
-          if ((Date.now()-skipList[0]) > 600000){
-            skipList.shift(); // remove skip if it has been more than 10 minutes
-            skipList.push(Date.now());
+      this.resume = async function() {
+          if(!first){
+            seleniumtest.pause()
+            let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
+            fs.appendFileSync(logfile, str);
           }
           else{
-            socket.emit('surfing', null); // alert using he is skipping too much
-            canskip = false;
-          }
-        }
-        if (canskip){
-          if (pause_num%2 == 0) {
-            timer.resume();
-          }
-          timer.restart();
-        }
-      });
-
-      socket.on("stopsocket", async (arg) => {
-        if (arg){ // timeout
-          let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
-          fs.appendFileSync(logfile, str);
-        }
-        stop(arg);
-      });
-      
-      socket.on('restbpm', async (arg)=> {
-        restbpm(arg);
-      })
-
-      socket.on("mode", async (arg) => {
-        mode = arg;
-        seleniumtest.setMode(mode);
-      })
-
-      socket.on("pausesocket", async (arg) => {
-        pause_num += 1;
-        //console.log(pause_num)
-        if (pause_num%2 == 0) {
-          timer.pause();
-        }
-        else{
-          timer.resume();
-        }
-      });
-
-      socket.on("changeVolume", async (arg) => {
-        var change_nums = Math.floor(parseFloat(arg) / 3);
-        seleniumtest.changeVolume(change_nums);
-      });
-
-      socket.on("epsilon", async (arg) =>{
-        seleniumtest.changeEpsilon(parseFloat(arg));
-        let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
-        fs.appendFileSync(logfile, str);
-      })
-
-      socket.on("alpha", async(arg) => {
-        seleniumtest.changeAlpha(parseFloat(arg));
-        let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
-        fs.appendFileSync(logfile, str);
-      })
-
-      socket.on("setprevious", async() => {
-        seleniumtest.setPrevBPM();
-      })
-
-      function callbackfn(){
-          timer.switch(this, seleniumtest.timeouts)
-      }
-      
-
-      async function playNext(action){
-          var msg = seleniumtest.playNext(mode, action);
-          msg.then(async (e)=>{
-            var a = null;
-            switch(action){
-              case 1:
-                a = "next_pressed";
-                break;
-              case 0:
-                a = "switched";
-                break;
-            }
-            let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
-            fs.appendFileSync(logfile, str);
-            socket.emit("next", e[0]);
             seleniumtest.getVolume().then((v) =>{
               socket.emit("volume", v);
             });
-            
-          })
-      }
-      var Timer = function(callback, delay) {
-          var timerId, start, fixedtime = delay
-          var first = true;
-          var lastStart = Date.now();
-          var total = 0
-          this.pause = function() {
-              seleniumtest.pause()
-              clearTimeout(timerId);
-              let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
-              fs.appendFileSync(logfile, str);
-              total += Date.now() - lastStart; // update time spent in training
-          };
-
-          this.resume = async function() {
-              if(!first){
-                seleniumtest.pause()
-                let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
-                fs.appendFileSync(logfile, str);
-              }
-              else{
-                seleniumtest.getVolume().then((v) =>{
-                  socket.emit("volume", v);
-                });
-                first = false;
-              }
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
-              lastStart = Date.now();  
-          };
-
-          this.restart = function() {
-              playNext(1)
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
-          };
-
-          this.switch = function (){
-              playNext(0)
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
+            first = false;
           }
-
-          this.getSessionTime = function(){
-            total += Date.now() - lastStart; // update time spent in training
-            return total;
-          }
-
-          this.resume();
+          start = Date.now();
+          clearTimeout(timerId);
+          timerId = setTimeout(callback, fixedtime);
+          lastStart = Date.now();  
       };
-  });
+
+      this.restart = function() {
+          playNext(1)
+          start = Date.now();
+          clearTimeout(timerId);
+          timerId = setTimeout(callback, fixedtime);
+      };
+
+      this.switch = function (){
+          playNext(0)
+          start = Date.now();
+          clearTimeout(timerId);
+          timerId = setTimeout(callback, fixedtime);
+      }
+
+      this.getSessionTime = function(){
+        total += Date.now() - lastStart; // update time spent in training
+        return total;
+      }
+
+      this.resume();
+  };
+});
 
 server.listen(3000, () => {
     //console.log('listening on *:3000');
