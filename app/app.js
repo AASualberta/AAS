@@ -35,8 +35,10 @@ var playing = false;
 var drivelog;
 var logfile;
 var user = null;
+var tempuser = null; // username entered at signup, used before signup is complete.
 var isAdmin = false;
 var restBPM;
+var signupanswers;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -76,7 +78,6 @@ router.post('/soundscape', async (ctx, next) => {
 })
 
 router.get('/soundscape', async (ctx, next) => {
-  console.log("getting");
   if (inited && user) {
     await ctx.render('soundscape');
   }
@@ -86,7 +87,7 @@ router.get('/soundscape', async (ctx, next) => {
 })
 
 router.post('/signin', async (ctx, next) => {
-  if (!user) {
+  if (user != ctx.request.body['username']) {
     var re = db.findName(ctx.request.body['username']); // check if user exists
     if (re){
       user = re["name"]; // get user name
@@ -98,9 +99,15 @@ router.post('/signin', async (ctx, next) => {
         seleniumtest.setMode(1)
       }
 
-      // redirect to the url '/soundscape'
-      ctx.status = 307;
-      ctx.redirect("/soundscape");
+      if (db.getRestBPM(user) > 0){
+        // redirect to the url '/soundscape'
+        ctx.status = 307;
+        ctx.redirect("/soundscape");
+      }
+      else{
+        ctx.status = 307;
+        ctx.redirect("/heartrate");
+      }
     }
     else {
       // haven't signed up yet, requires to sign up first
@@ -110,7 +117,15 @@ router.post('/signin', async (ctx, next) => {
   }
   else {
     // if signed in/up, redirect to url '/soundscape'
-    ctx.redirect("/soundscape");
+    if (db.getRestBPM(user) > 0){
+      // redirect to the url '/soundscape'
+      ctx.status = 307;
+      ctx.redirect("/soundscape");
+    }
+    else{
+      ctx.status = 307;
+      ctx.redirect("/heartrate");
+    }
   }
 })
 
@@ -122,24 +137,41 @@ router.post('/end', async(ctx, next) => {
 })
 
 router.get('/end', async(ctx, next) => {
-  await ctx.render('end');
+  if (inited && user) {
+    await ctx.render('end');
+  }
+  else{
+    ctx.redirect("/");
+  }
 })
 
 router.post('/signup', async(ctx, next) => {
-    // add a new user to database
-    newUserLogFile = db.addUser(ctx.request.body['username'], restBPM);
-    logSurvey(ctx, newUserLogFile);
-    let str = "resting heart rate: " + restBPM + "\n";
-    fs.appendFileSync(newUserLogFile, str);
-    ctx.response.status = 200;
-    ctx.response.body = "<p>You have successfully signed up!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+  // add a new user to database
+  user = ctx.request.body['username'];
+  newUserLogFile = db.addUser(user, 0);
+  logSurvey(ctx, newUserLogFile);
+  ctx.response.status = 307;
+  ctx.redirect("/heartrate");
 })
 
+router.post('/heartrate', async(ctx, next) => {
+  await ctx.render('heartrate');
+  getHeartRateAtSignUp();
+  //console.log(ctx.request.body);
+})
+
+router.get('/heartrate', async(ctx, next) => {
+  if (user) {
+    await ctx.render('heartrate');
+  }
+  else{
+    ctx.redirect("/");
+  }
+})
 
 router.get('/', async (ctx, next) => {
   if (!user) {
     await ctx.render('index');
-    getHeartRateAtSignUp();
   }
   else {
     ctx.redirect("/soundscape");
@@ -226,6 +258,21 @@ function getHeartRateAtSignUp(){
     currentSocket.on('getBPM', () => {
       router.post('/test', async (ctx, next) =>{
         if (bpmUsedForAlg){ // using /test route for soundscapes page
+          if (inited) {
+            try{
+              let body = JSON.parse(ctx.request.body);
+              if (body.hasOwnProperty("heartrate")){
+                console.log(body.heartrate);
+                seleniumtest.addBPM(body.heartrate);
+                ctx.status = 200;
+              }
+            }
+            catch(e){
+              console.log(e);
+            }
+          }
+        }
+        else{ // using /test route for signup
           if (!bpm_connected){
             try{
               let body = JSON.parse(ctx.request.body);
@@ -239,60 +286,49 @@ function getHeartRateAtSignUp(){
             catch(e){
               console.log(e);
             }
-            if (inited && bpm_connected) {
-              let str = "Timestamp: "+Date.now()+"; connected\n";
-              fs.appendFileSync(logfile, str);
-              currentSocket.emit("init123", "world");
-            }
           }
-          else{ // watch already connected
-            if (inited) {
-              try{
-                let body = JSON.parse(ctx.request.body);
-                if (body.hasOwnProperty("heartrate")){
-                  console.log(body.heartrate);
-                  seleniumtest.addBPM(body.heartrate);
-                  ctx.status = 200;
-                }
-              }
-              catch(e){
-                console.log(e);
+
+          if (bpm_connected){
+            try{
+              let body = JSON.parse(ctx.request.body);
+              if (body.hasOwnProperty("heartrate")){
+                console.log(body.heartrate);
+                ctx.status = 200;
               }
             }
-          }
-        }
-        else{ // using /test route for signup
-          try{
-            let body = JSON.parse(ctx.request.body);
-            if (body.hasOwnProperty("heartrate")){
-              console.log(body.heartrate);
-              ctx.status = 200;
+            catch(e){
+              console.log(e);
             }
-          }
-          catch(e){
-            console.log(e);
-          }
-          if (firstRequest){
-            startTime = Date.now();
-            currentSocket.emit('updateProgress',null);
-            firstRequest = false;
-          }
-          if (Date.now()-startTime > 30000){ // every 30 seconds
-            startTime = Date.now()
-            currentSocket.emit('updateProgress',null);
-            total += 1;
-            if (total > 3){ // after 1.5 minutes start averaging hr
-              average+=parseInt(ctx.request.body);
+            if (firstRequest){
+              startTime = Date.now();
+              currentSocket.emit('updateProgress',null);
+              firstRequest = false;
             }
-            if (total==10){ // after 5 minutes return average
-              restBPM = average/7;
-              seleniumtest.setPrevBPM(restBPM); // set previous bpm in alg
+            /***
+             * HOW OFTEN IS A HR SENT?
+             */
+            if (Date.now()-startTime > 30000){ // every 30 seconds
+              startTime = Date.now()
+              currentSocket.emit('updateProgress',null);
+              total += 1;
+              if (total > 3){ // after 1.5 minutes start averaging hr
+                average+=parseInt(ctx.request.body);
+              }
+              if (total==10){ // after 5 minutes return average
+                restBPM = average/7;
+                seleniumtest.setPrevBPM(restBPM); // set previous bpm in alg
+                let str = "resting heart rate: " + restBPM + "\n";
+                var filename = "./log/" + user + ".log";
+                fs.appendFileSync(filename, str);
+                db.addUser(user, restBPM);
+                ctx.status = 307;
+                ctx.redirect = '/soundscape';
+              }
             }
           }
         }
       })
     })
-
   })
 }
 
@@ -301,23 +337,21 @@ function ioconnection(){
   io.on('connection', async (socket) => {
     currentSocket = socket;
       router.post('/test', async (ctx, next) =>{
-        if (!bpm_connected){
+        if (!bpm_connected && inited){
           try{
             let body = JSON.parse(ctx.request.body);
             if (body.hasOwnProperty("command")){
               if (body.command == "match"){
                 ctx.body = {"username": user};
+                let str = "Timestamp: "+Date.now()+"; connected\n";
+                fs.appendFileSync(logfile, str);
+                socket.emit("init123", "world");
                 bpm_connected = true;
               }
             }
           }
           catch(e){
             console.log(e);
-          }
-          if (inited && bpm_connected) {
-            let str = "Timestamp: "+Date.now()+"; connected\n";
-            fs.appendFileSync(logfile, str);
-            socket.emit("init123", "world");
           }
         }
         else{ // watch already connected

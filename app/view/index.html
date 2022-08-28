@@ -1,10 +1,6 @@
 <script src="js/jquery.min.js"></script>
 <script src="js/socket.io.js"></script>
 <script src="js/bootstrap.min.js"></script>
-<script>
-  const socket = io("http://localhost:3000/");
-</script>
-
 
 <div class="container">
   <div class="vertical-center center row align-items-center bg_gray" id="login_page">
@@ -64,17 +60,9 @@
             <input type="radio" id="gender" name="gender" value="custom" onclick="setRequired('gendertext');"> Other: <input type="text" name="gendertext" id="gendertext"/><br>
             <input type="radio" id="nogenderanswer" name="gender" value="Prefer not to answer" onclick="removeRequired('gendertext');" checked> Prefer not to answer<br><br>
           </div>
-            <br><br><br>
-            <h5>Resting heart rate</h5>
-            <label for="hrbutton" class="center">In order to get your resting heart rate, please connect to the pulse sensor. Once you are ready click start. Try to relax for a while as this process takes 5 minutes.</label>
-        <div class="center" id="status" style="display: none;">
-          <h4 id="status_text">Progress: Not connected </h4>
-        </div>
-        <div class="center" id="start_button_div" style="display: block;">
-            <button class="btn btn-block" id="start_button" type="button" > Start </button>
-        </div>
+            <br>
         <div class="center" >
-          <input id="signupformbutton" type="submit" class="btn btn-block" value="Sign up" disabled> 
+          <input id="signupformbutton" type="submit" class="btn btn-block" value="Sign up"> 
         </div>
         </form>
       </div> 
@@ -86,13 +74,14 @@
     <div class="col-1"></div>
     <div class="col-xl-10">
       <div class="center ">
-        <form id="form" class="center" action="/soundscape">
-            <label for="restbpm" class="center">Resting heart rate:</label>
-            <input required type="number" id="restbpm" name="restbpm" style="width: 100%" ><br><br>
-        <div class="center" >
-          <input id="formbutton" type="submit" class="btn btn-block"> 
+        <h5>Resting heart rate</h5>
+            <label for="hrbutton" class="center">In order to get your resting heart rate, please connect to your watch. Once you are ready click start. Try to relax for a while as this process takes 5 minutes.</label>
+        <div class="center" id="status" style="display: none;">
+          <h4 id="status_text">Progress: Not connected </h4>
         </div>
-        </form>
+        <div class="center" id="start_button_div" style="display: block;">
+            <button class="btn btn-block" id="start_button" type="button" > Start </button>
+        </div>
       </div> 
     </div>
     <div class="col-1"></div>
