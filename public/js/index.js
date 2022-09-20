@@ -16,13 +16,11 @@
 
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
-    document.getElementById("h").innerHTML = "loaded";
-    document.getElementById("alert").style.visibility = "hidden";
     document.getElementById("stop").disabled = false;
     socket.emit("restbpm", bpm);
     // start playing right when loaded
     socket.emit("startsocket", null);
-    setprevtimeout = setTimeout(setPrevBpm, 60000); // timeout after 1 minute (900000 ms) of first sound to set previous bpm in alg
+    setprevtimeout = setTimeout(setPrevBpm, 90000); // timeout after 1.5 minute (900000 ms) of first sound to set previous bpm in alg
     nextbutton.disabled = false;
     pausebutton.classList.toggle("playDisabled");
     pausebutton.classList.toggle("active");
@@ -85,6 +83,10 @@
     document.getElementById("alert").innerHTML = "Stop surfing and listen!"
     document.getElementById("alert").style.visibility = "visible";
     setTimeout(hideAlert, 5000);
+  })
+
+  socket.on('loaded', function(msg){
+    document.getElementById("h").innerHTML = "Loaded, you can now connect with the app";
   })
 
   function hideAlert(){

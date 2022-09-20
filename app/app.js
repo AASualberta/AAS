@@ -55,7 +55,7 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
-  
+  console.log("in post s");
   drivelog = new Drive(user);
   logfile = "./log/" + user + ".log";
   seleniumtest.setLogFile(logfile);
@@ -69,8 +69,10 @@ router.post('/soundscape', async (ctx, next) => {
   await ctx.render('soundscape');
   if (!inited) {
     bpmUsedForAlg = true;
-    initialize();
+    console.log("bout to io");
     ioconnection();
+    console.log("bout to init");
+    initialize();
   }
   // log user mood description
   let str = "Timestamp: "+Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
@@ -78,6 +80,7 @@ router.post('/soundscape', async (ctx, next) => {
 })
 
 router.get('/soundscape', async (ctx, next) => {
+  console.log("in get s");
   if (inited && user) {
     await ctx.render('soundscape');
   }
@@ -87,6 +90,7 @@ router.get('/soundscape', async (ctx, next) => {
 })
 
 router.post('/signin', async (ctx, next) => {
+  console.log("in post si");
   if (user != ctx.request.body['username']) {
     var re = db.findName(ctx.request.body['username']); // check if user exists
     if (re){
@@ -118,6 +122,12 @@ router.post('/signin', async (ctx, next) => {
   else {
     // if signed in/up, redirect to url '/soundscape'
     if (db.getRestBPM(user) > 0){
+      seleniumtest.loadValues(user); // load action values from file
+      // check if training time > 3hours
+      if (db.findTime(user) > 10800000){
+        mode = 1;
+        seleniumtest.setMode(1)
+      }
       // redirect to the url '/soundscape'
       ctx.status = 307;
       ctx.redirect("/soundscape");
@@ -130,6 +140,7 @@ router.post('/signin', async (ctx, next) => {
 })
 
 router.post('/end', async(ctx, next) => {
+  console.log("in post e ");
   let str = "Timestamp: "+Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
   fs.appendFileSync(logfile, str);
   await logToDrive();
@@ -137,6 +148,7 @@ router.post('/end', async(ctx, next) => {
 })
 
 router.get('/end', async(ctx, next) => {
+  console.log("in get e");
   if (inited && user) {
     await ctx.render('end');
   }
@@ -146,6 +158,7 @@ router.get('/end', async(ctx, next) => {
 })
 
 router.post('/signup', async(ctx, next) => {
+  console.log("in post su");
   // add a new user to database
   user = ctx.request.body['username'];
   newUserLogFile = db.addUser(user, 0);
@@ -155,12 +168,14 @@ router.post('/signup', async(ctx, next) => {
 })
 
 router.post('/heartrate', async(ctx, next) => {
+  console.log("in post h");
   await ctx.render('heartrate');
   getHeartRateAtSignUp();
   //console.log(ctx.request.body);
 })
 
 router.get('/heartrate', async(ctx, next) => {
+  console.log("in get h");
   if (user) {
     await ctx.render('heartrate');
   }
@@ -170,7 +185,8 @@ router.get('/heartrate', async(ctx, next) => {
 })
 
 router.get('/', async (ctx, next) => {
-  if (!user) {
+  console.log("in get ");
+  if (!user || !inited) {
     await ctx.render('index');
   }
   else {
@@ -181,6 +197,12 @@ router.get('/', async (ctx, next) => {
 async function initialize(){
   await seleniumtest.init().then(()=>{
       inited = true;
+      if (!bpm_connected){
+        currentSocket.emit("loaded");
+      }
+      else{ // already connnected from resting hr
+        currentSocket.emit("init123", "world");
+      }
     })
 }
 
@@ -249,11 +271,9 @@ async function stop(fromTimeout){
 }
 
 function getHeartRateAtSignUp(){
-  let firstRequest = true;
-  let startTime;
   let total = 0;
   let average = 0;
-  io.on('connection', async(socket) => { 
+  io.on('connection', async(socket) => {
     currentSocket = socket;
     currentSocket.on('getBPM', () => {
       router.post('/test', async (ctx, next) =>{
@@ -261,10 +281,12 @@ function getHeartRateAtSignUp(){
           if (inited) {
             try{
               let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("heartrate")){
-                console.log(body.heartrate);
-                seleniumtest.addBPM(body.heartrate);
-                ctx.status = 200;
+              if (body.hasOwnProperty("command")){
+                if (body.command == "Heartrate"){
+                  console.log(body.heartrate);
+                  seleniumtest.addBPM(body.heartrate);
+                  ctx.status = 200;
+                }
               }
             }
             catch(e){
@@ -277,9 +299,12 @@ function getHeartRateAtSignUp(){
             try{
               let body = JSON.parse(ctx.request.body);
               if (body.hasOwnProperty("command")){
-                if (body.command == "match"){
-                  ctx.body = {"username": user};
-                  bpm_connected = true;
+                if (body.command == "Connect"){
+                  if (body.id == user){
+                    ctx.status = 200;
+                    bpm_connected = true;
+                    currentSocket.emit('updateProgress', null);
+                  }
                 }
               }
             }
@@ -288,41 +313,34 @@ function getHeartRateAtSignUp(){
             }
           }
 
-          if (bpm_connected){
+          else{
+            var hr = null;
             try{
               let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("heartrate")){
-                console.log(body.heartrate);
-                ctx.status = 200;
+              if (body.hasOwnProperty("command")){
+                if (body.command = "Heartrate"){
+                  hr = body.heartrate;
+                  console.log(hr);
+                  ctx.status = 200;
+                }
               }
             }
             catch(e){
               console.log(e);
             }
-            if (firstRequest){
-              startTime = Date.now();
-              currentSocket.emit('updateProgress',null);
-              firstRequest = false;
-            }
-            /***
-             * HOW OFTEN IS A HR SENT?
-             */
-            if (Date.now()-startTime > 30000){ // every 30 seconds
-              startTime = Date.now()
+          
+            if (hr){
               currentSocket.emit('updateProgress',null);
               total += 1;
-              if (total > 3){ // after 1.5 minutes start averaging hr
-                average+=parseInt(ctx.request.body);
+              if (total > 2){ // after 2 minutes start averaging hr
+                average+=hr;
               }
-              if (total==10){ // after 5 minutes return average
-                restBPM = average/7;
-                seleniumtest.setPrevBPM(restBPM); // set previous bpm in alg
+              if (total==5){ // after 5 minutes return average
+                restBPM = average/3;
                 let str = "resting heart rate: " + restBPM + "\n";
                 var filename = "./log/" + user + ".log";
                 fs.appendFileSync(filename, str);
                 db.addUser(user, restBPM);
-                ctx.status = 307;
-                ctx.redirect = '/soundscape';
               }
             }
           }
@@ -341,12 +359,14 @@ function ioconnection(){
           try{
             let body = JSON.parse(ctx.request.body);
             if (body.hasOwnProperty("command")){
-              if (body.command == "match"){
-                ctx.body = {"username": user};
-                let str = "Timestamp: "+Date.now()+"; connected\n";
-                fs.appendFileSync(logfile, str);
-                socket.emit("init123", "world");
-                bpm_connected = true;
+              if (body.command == "Connect"){
+                if (body.id == user){
+                  let str = "Timestamp: "+Date.now()+"; connected\n";
+                  fs.appendFileSync(logfile, str);
+                  socket.emit("init123", "world");
+                  bpm_connected = true;
+                  ctx.status = 200;
+                }
               }
             }
           }
@@ -355,13 +375,15 @@ function ioconnection(){
           }
         }
         else{ // watch already connected
-          if (inited) {
+          if (inited && bpm_connected) {
             try{
               let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("heartrate")){
-                console.log(body.heartrate);
-                seleniumtest.addBPM(body.heartrate);
-                ctx.status = 200;
+              if (body.hasOwnProperty("command")){
+                if (body.command == "Heartrate"){
+                  console.log(body.heartrate);
+                  seleniumtest.addBPM(body.heartrate);
+                  ctx.status = 200;
+                }
               }
             }
             catch(e){

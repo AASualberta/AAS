@@ -85,7 +85,7 @@ async changeEpsilon(epsilon) {
     alg.setEpsilon(epsilon);
 }
 
-async setPrevBPM(){
+async setPrevBPM(bpm){
     alg.setPrevBPM(this.avg_bpm);
 }
 
