@@ -181,7 +181,7 @@ async startFirstSound(){
     this.select_msg = alg.getMessage();
     //console.log(this.select_msg)
     return msg.then((e)=>{
-        let name = e.trim();
+        let name = e;
         return [name,"; soundscape: "+ name + "; value index: "+ ind.toString() + this.select_msg]
     })
 }
@@ -221,7 +221,7 @@ async playNext(mode, pressed){
         });
     });
     return msg.then((e)=>{
-        let name = e[0].trim();
+        let name = e[0];
         return [name,"; soundscape: "+ name + "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }

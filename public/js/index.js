@@ -16,6 +16,7 @@
 
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
+    console.log("init123 recv")
     document.getElementById("stop").disabled = false;
     socket.emit("restbpm", bpm);
     // start playing right when loaded

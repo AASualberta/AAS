@@ -21,6 +21,8 @@ const router = koaRouter();
 const server = require('http').createServer(app.callback());
 var io = require('socket.io')(server);
 var currentSocket;
+var hgSocket = null;
+var indexSocket = null;
 
 var timer;
 var skipList = [];
@@ -39,6 +41,9 @@ var tempuser = null; // username entered at signup, used before signup is comple
 var isAdmin = false;
 var restBPM;
 var signupanswers;
+
+var soundscapes_listen = false;
+var signup_listen = false;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -74,6 +79,9 @@ router.post('/soundscape', async (ctx, next) => {
     console.log("bout to init");
     initialize();
   }
+
+  soundscapes_listen = true;
+
   // log user mood description
   let str = "Timestamp: "+Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
   fs.appendFileSync(logfile, str);
@@ -169,14 +177,16 @@ router.post('/signup', async(ctx, next) => {
 
 router.post('/heartrate', async(ctx, next) => {
   console.log("in post h");
+  signup_listen = true;
   await ctx.render('heartrate');
   getHeartRateAtSignUp();
-  //console.log(ctx.request.body);
+  console.log(ctx.request.body);
 })
 
 router.get('/heartrate', async(ctx, next) => {
   console.log("in get h");
   if (user) {
+    signup_listen = true;
     await ctx.render('heartrate');
   }
   else{
@@ -271,9 +281,11 @@ async function stop(fromTimeout){
 }
 
 function getHeartRateAtSignUp(){
+ console.log("getHeartRateAtSignUp")
   let total = 0;
   let average = 0;
   io.on('connection', async(socket) => {
+    console.log("getHeartRateAtSignUp_connect")
     currentSocket = socket;
     currentSocket.on('getBPM', () => {
       router.post('/test', async (ctx, next) =>{
@@ -288,6 +300,7 @@ function getHeartRateAtSignUp(){
                   ctx.status = 200;
                 }
               }
+              console.log(ctx.request.body);
             }
             catch(e){
               console.log(e);
@@ -353,6 +366,7 @@ function getHeartRateAtSignUp(){
 
 function ioconnection(){
   io.on('connection', async (socket) => {
+    //console.log("socket connect");
     currentSocket = socket;
       router.post('/test', async (ctx, next) =>{
         if (!bpm_connected && inited){
@@ -398,11 +412,98 @@ function ioconnection(){
 }
 
 io.on('connection', async (socket) => {
-  //console.log(`Socket ${socket.id} connected. pause_num:`, pause_num);
 
-  socket.on('disconnect', () => {
-    //console.log(`Socket ${socket.id} disconnected.`);
+
+  if (indexSocket == null){
+    indexSocket = socket;
+  }
+  else if (hgSocket == null){
+    hgSocket = socket;
+  }
+  else{
+    console.log("too many connections");
+    return;
+  }
+
+  console.log("socket connect");
+  let total = 0;
+  let average = 0;
+
+  if (hgSocket != null){
+    hgSocket.on('message', function name(data) {
+      // console.log(data)
+      if (soundscapes_listen){  // handle data on soundscapes page
+        if (data.hasOwnProperty("command")){
+          if (data.command == "Connect"){
+            if (data.UserName == user){
+              console.log("connected");
+              let str = "Timestamp: "+Date.now()+"; connected\n";
+              fs.appendFileSync(logfile, str);
+              bpm_connected = true;
+              indexSocket.emit("init123", "world");
+              console.log("init123 sent");
+            }
+          }
+          else if (data.command == "Heartrate"){
+            if (bpm_connected && inited){
+              console.log(data.heartrate);
+              seleniumtest.addBPM(data.heartrate);
+            }
+          }
+        } 
+      }
+      else if (signup_listen){  // handle data on signup page (get resting hr)
+        if (data.hasOwnProperty("command")){
+          if (data.command == "Connect"){
+            if (data.UserName == user){
+              console.log("connected");
+              bpm_connected = true;
+            }
+          }
+          else if (data.command == "Heartrate"){
+            if (bpm_connected){
+              var hr = data.heartrate
+              console.log(data.heartrate);
+              indexSocket.emit('updateProgress', null);
+              total += 1;
+              if (total > 2){ // after 2 minutes start averaging hr
+                average+=hr;
+              }
+              if (total==5){ // after 5 minutes return average
+                restBPM = average/3;
+                let str = "resting heart rate: " + restBPM + "\n";
+                var filename = "./log/" + user + ".log";
+                fs.appendFileSync(filename, str);
+                db.addUser(user, restBPM);
+              }
+            }
+          }
+        } 
+      }
+      io.emit('message', data)
+    })
+  }
+  indexSocket.emit("isAdmin", isAdmin);
+  indexSocket.emit("setMode", mode); 
+
+  indexSocket.on('disconnect', () => {
+    indexSocket = null;
+    console.log(`indexSocket ${socket.id} disconnected.`);
   });
+
+  if (hgSocket != null){
+    hgSocket.on('disconnect', () => {
+      hgSocket = null;
+      console.log(`hgSocket ${socket.id} disconnected.`);
+    });
+  }
+
+
+
+
+
+
+
 
   if (inited) {
 
@@ -410,7 +511,7 @@ io.on('connection', async (socket) => {
       socket.emit("reload", false);
     }
     else socket.emit("reload", true);
-  }
+  }  
 
   socket.on("startsocket", async (arg) => {
     await seleniumtest.startFirstSound().then((e)=>{
@@ -465,7 +566,7 @@ io.on('connection', async (socket) => {
 
   socket.on("pausesocket", async (arg) => {
     pause_num += 1;
-    //console.log(pause_num)
+    console.log(pause_num)
     if (pause_num%2 == 0) {
       timer.pause();
     }
