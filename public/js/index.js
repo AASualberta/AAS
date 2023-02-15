@@ -169,7 +169,6 @@ document.getElementById("volume-control").addEventListener("change", function(){
   volume = slideAmount;
 });
 
-
 document.getElementById("epsilon_range").addEventListener("change", function() {
   var epsilon_range = document.getElementById("epsilon_range").value;
   socket.emit("epsilon", epsilon_range);

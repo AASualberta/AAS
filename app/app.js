@@ -75,7 +75,7 @@ router.post('/soundscape', async (ctx, next) => {
   if (!inited) {
     bpmUsedForAlg = true;
     console.log("bout to io");
-    ioconnection();
+    //ioconnection();
     console.log("bout to init");
     initialize();
   }
@@ -179,7 +179,7 @@ router.post('/heartrate', async(ctx, next) => {
   console.log("in post h");
   signup_listen = true;
   await ctx.render('heartrate');
-  getHeartRateAtSignUp();
+  //getHeartRateAtSignUp();
   console.log(ctx.request.body);
 })
 
@@ -208,10 +208,10 @@ async function initialize(){
   await seleniumtest.init().then(()=>{
       inited = true;
       if (!bpm_connected){
-        currentSocket.emit("loaded");
+        indexSocket.emit("loaded");
       }
       else{ // already connnected from resting hr
-        currentSocket.emit("init123", "world");
+        indexSocket.emit("init123", "world");
       }
     })
 }
@@ -280,136 +280,7 @@ async function stop(fromTimeout){
   seleniumtest.close(fromTimeout);
 }
 
-function getHeartRateAtSignUp(){
- console.log("getHeartRateAtSignUp")
-  let total = 0;
-  let average = 0;
-  io.on('connection', async(socket) => {
-    console.log("getHeartRateAtSignUp_connect")
-    currentSocket = socket;
-    currentSocket.on('getBPM', () => {
-      router.post('/test', async (ctx, next) =>{
-        if (bpmUsedForAlg){ // using /test route for soundscapes page
-          if (inited) {
-            try{
-              let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("command")){
-                if (body.command == "Heartrate"){
-                  console.log(body.heartrate);
-                  seleniumtest.addBPM(body.heartrate);
-                  ctx.status = 200;
-                }
-              }
-              console.log(ctx.request.body);
-            }
-            catch(e){
-              console.log(e);
-            }
-          }
-        }
-        else{ // using /test route for signup
-          if (!bpm_connected){
-            try{
-              let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("command")){
-                if (body.command == "Connect"){
-                  if (body.id == user){
-                    ctx.status = 200;
-                    bpm_connected = true;
-                    currentSocket.emit('updateProgress', null);
-                  }
-                }
-              }
-            }
-            catch(e){
-              console.log(e);
-            }
-          }
 
-          else{
-            var hr = null;
-            try{
-              let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("command")){
-                if (body.command = "Heartrate"){
-                  hr = body.heartrate;
-                  console.log(hr);
-                  ctx.status = 200;
-                }
-              }
-            }
-            catch(e){
-              console.log(e);
-            }
-          
-            if (hr){
-              currentSocket.emit('updateProgress',null);
-              total += 1;
-              if (total > 2){ // after 2 minutes start averaging hr
-                average+=hr;
-              }
-              if (total==5){ // after 5 minutes return average
-                restBPM = average/3;
-                let str = "resting heart rate: " + restBPM + "\n";
-                var filename = "./log/" + user + ".log";
-                fs.appendFileSync(filename, str);
-                db.addUser(user, restBPM);
-              }
-            }
-          }
-        }
-      })
-    })
-  })
-}
-
-
-function ioconnection(){
-  io.on('connection', async (socket) => {
-    //console.log("socket connect");
-    currentSocket = socket;
-      router.post('/test', async (ctx, next) =>{
-        if (!bpm_connected && inited){
-          try{
-            let body = JSON.parse(ctx.request.body);
-            if (body.hasOwnProperty("command")){
-              if (body.command == "Connect"){
-                if (body.id == user){
-                  let str = "Timestamp: "+Date.now()+"; connected\n";
-                  fs.appendFileSync(logfile, str);
-                  socket.emit("init123", "world");
-                  bpm_connected = true;
-                  ctx.status = 200;
-                }
-              }
-            }
-          }
-          catch(e){
-            console.log(e);
-          }
-        }
-        else{ // watch already connected
-          if (inited && bpm_connected) {
-            try{
-              let body = JSON.parse(ctx.request.body);
-              if (body.hasOwnProperty("command")){
-                if (body.command == "Heartrate"){
-                  console.log(body.heartrate);
-                  seleniumtest.addBPM(body.heartrate);
-                  ctx.status = 200;
-                }
-              }
-            }
-            catch(e){
-              console.log(e);
-            }
-          }
-        }
-      });
-      socket.emit("isAdmin", isAdmin);
-      socket.emit("setMode", mode); 
-  }); 
-}
 
 io.on('connection', async (socket) => {
 
@@ -429,9 +300,11 @@ io.on('connection', async (socket) => {
   let total = 0;
   let average = 0;
 
+  let firstHR = true;
+
   if (hgSocket != null){
     hgSocket.on('message', function name(data) {
-      // console.log(data)
+      console.log(data)
       if (soundscapes_listen){  // handle data on soundscapes page
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
@@ -446,8 +319,19 @@ io.on('connection', async (socket) => {
           }
           else if (data.command == "Heartrate"){
             if (bpm_connected && inited){
-              console.log(data.heartrate);
-              seleniumtest.addBPM(data.heartrate);
+              if (firstHR){ // ignore first hr (bad)
+                firstHR = false;
+              }
+              else{ 
+                total += 1;
+                timer.restart();
+                console.log(data.heartrate);
+                seleniumtest.addBPM(data.heartrate);
+                if (total == 5){ // switch
+                  total = 0;
+                  timer.switch();
+                }
+              }
             }
           }
         } 
@@ -470,11 +354,13 @@ io.on('connection', async (socket) => {
                 average+=hr;
               }
               if (total==5){ // after 5 minutes return average
+                total = 0;
                 restBPM = average/3;
                 let str = "resting heart rate: " + restBPM + "\n";
                 var filename = "./log/" + user + ".log";
                 fs.appendFileSync(filename, str);
                 db.addUser(user, restBPM);
+                firstHR = false;
               }
             }
           }
@@ -503,8 +389,6 @@ io.on('connection', async (socket) => {
 
 
 
-
-
   if (inited) {
 
     if (pause_num%2 == 0) {
@@ -520,7 +404,7 @@ io.on('connection', async (socket) => {
       socket.emit("next", e[0]);
     });
     
-    timer = new Timer(callbackfn, seleniumtest.timer);
+    timer = new Timer(callbackfn, 75000);
     pause_num += 1;
   });
 
@@ -543,7 +427,7 @@ io.on('connection', async (socket) => {
       if (pause_num%2 == 0) {
         timer.resume();
       }
-      timer.restart();
+      timer.next();
     }
   });
 
@@ -596,8 +480,10 @@ io.on('connection', async (socket) => {
     seleniumtest.setPrevBPM();
   })
 
-  function callbackfn(){
-      timer.switch(this, seleniumtest.timeouts)
+  function callbackfn(){ // chnage this so it ends session
+    let str = ("Timestamp: " + Date.now() + "; No signal from watch!\n");
+    fs.appendFileSync(logfile, str);
+    stop(true);
   }
   
 
@@ -653,8 +539,14 @@ io.on('connection', async (socket) => {
           lastStart = Date.now();  
       };
 
-      this.restart = function() {
+      this.next = function() {
           playNext(1)
+          start = Date.now();
+          clearTimeout(timerId);
+          timerId = setTimeout(callback, fixedtime);
+      };
+
+      this.restart = function() {
           start = Date.now();
           clearTimeout(timerId);
           timerId = setTimeout(callback, fixedtime);
@@ -681,3 +573,135 @@ server.listen(3000, () => {
 });
 
 module.exports = server;
+
+
+// function getHeartRateAtSignUp(){
+//  console.log("getHeartRateAtSignUp")
+//   let total = 0;
+//   let average = 0;
+//   io.on('connection', async(socket) => {
+//     console.log("getHeartRateAtSignUp_connect")
+//     currentSocket = socket;
+//     currentSocket.on('getBPM', () => {
+//       router.post('/test', async (ctx, next) =>{
+//         if (bpmUsedForAlg){ // using /test route for soundscapes page
+//           if (inited) {
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Heartrate"){
+//                   console.log(body.heartrate);
+//                   seleniumtest.addBPM(body.heartrate);
+//                   ctx.status = 200;
+//                 }
+//               }
+//               console.log(ctx.request.body);
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+//         }
+//         else{ // using /test route for signup
+//           if (!bpm_connected){
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Connect"){
+//                   if (body.id == user){
+//                     ctx.status = 200;
+//                     bpm_connected = true;
+//                     currentSocket.emit('updateProgress', null);
+//                   }
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+
+//           else{
+//             var hr = null;
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command = "Heartrate"){
+//                   hr = body.heartrate;
+//                   console.log(hr);
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+          
+//             if (hr){
+//               currentSocket.emit('updateProgress',null);
+//               total += 1;
+//               if (total > 2){ // after 2 minutes start averaging hr
+//                 average+=hr;
+//               }
+//               if (total==5){ // after 5 minutes return average
+//                 restBPM = average/3;
+//                 let str = "resting heart rate: " + restBPM + "\n";
+//                 var filename = "./log/" + user + ".log";
+//                 fs.appendFileSync(filename, str);
+//                 db.addUser(user, restBPM);
+//               }
+//             }
+//           }
+//         }
+//       })
+//     })
+//   })
+// }
+
+
+// function ioconnection(){
+//   io.on('connection', async (socket) => {
+//     //console.log("socket connect");
+//     currentSocket = socket;
+//       router.post('/test', async (ctx, next) =>{
+//         if (!bpm_connected && inited){
+//           try{
+//             let body = JSON.parse(ctx.request.body);
+//             if (body.hasOwnProperty("command")){
+//               if (body.command == "Connect"){
+//                 if (body.id == user){
+//                   let str = "Timestamp: "+Date.now()+"; connected\n";
+//                   fs.appendFileSync(logfile, str);
+//                   socket.emit("init123", "world");
+//                   bpm_connected = true;
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//           }
+//           catch(e){
+//             console.log(e);
+//           }
+//         }
+//         else{ // watch already connected
+//           if (inited && bpm_connected) {
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Heartrate"){
+//                   console.log(body.heartrate);
+//                   seleniumtest.addBPM(body.heartrate);
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+//         }
+//       });
+//       socket.emit("isAdmin", isAdmin);
+//       socket.emit("setMode", mode); 
+//   }); 
+// }

@@ -33,7 +33,7 @@ class SeleniumTest{
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
-        this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
+        // this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
         this.msg = null;
         this.select_msg = null;
         this.bpms = [];
@@ -172,8 +172,8 @@ async startFirstSound(){
         el.sendKeys(Key.chord("p")).then((a)=>{
             //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
-        return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
-            return await ele.getAttribute("textContent").then((e)=>{
+        return await driver.findElement(By.css('div.mainTitle')).then(async (ele)=>{
+            return await ele.getAttribute("titleName").then((e)=>{
                 return e;
             });
         });
@@ -209,8 +209,8 @@ async playNext(mode, pressed){
                 await el.sendKeys(Key.chord("p")).then((a)=>{
                     //console.log("unmute...");
                 });
-                return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
-                   return await el.getAttribute("textContent").then((value)=>{
+                return await driver.findElement(By.css('div.mainTitle')).then(async function (el){
+                   return await el.getAttribute("titleName").then((value)=>{
                         //console.log("Switched to "+value);
                         //el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         return value;
