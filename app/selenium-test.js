@@ -7,6 +7,7 @@ const Algorithm = require('./alg.js');
 var options = new chrome.Options();
 options.headless();
 options.addArguments("--autoplay-policy=no-user-gesture-required");
+options.addArguments("--no-sandbox")
 options.windowSize({height:5, width:5, x:0, y:0});
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
@@ -239,6 +240,7 @@ async init(){
         3. Select a part of categories.
         4. Initialize the browser and all tabs, load all sounds.
     */
+    console.log('initing sounds')
     var SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
     /*var allSounds = [];
     // Initialize the driver.
@@ -264,6 +266,7 @@ async init(){
 
     //Open all tabs and wait until all sounds are loaded.
     await this.openTabs(lib);
+    console.log('loaded the sounds')
     return true;
 }
 

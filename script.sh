@@ -23,7 +23,7 @@ if which node > /dev/null
         brew install node
     fi
 npm install
-npm install -g chromedriver
+npm install -g chromedriver # only thing i need in docker version
 
 if which python3 > /dev/null
 	then
