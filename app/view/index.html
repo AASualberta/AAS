@@ -7,10 +7,10 @@
     <div class="col-1"></div>
     <div class="col-xl-10">
       <div class="center " id="choose">
-        <button class="btn btn-block" id="signin_button" type="button" > Start a Session </button>
+        <button class="btn btn-primary btn-block" id="signin_button" type="button" > Start a Session </button>
         <br>
         <label for="signup_button" class="center">Don't have an account yet?</label>
-        <button class="btn btn-block" id="signup_button" type="button" > Sign Up </button>
+        <button class="btn btn-primary btn-block" id="signup_button" type="button" > Sign Up </button>
       </div> 
     </div>
     <div class="col-1"></div>
@@ -26,7 +26,7 @@
             <label for="mood" class="center">Before starting, please give a short description of what you did in the last hour and how you feel:</label>
             <input required type="text" id="mood" name="mood" placeholder="Write here..." style="width: 100%"><br><br>
         <div class="center" >
-          <input id="formbutton" type="submit" class="btn btn-block" value="Start Session"> 
+          <input id="formbutton" type="submit" class="btn btn-primary btn-block" value="Start Session"> 
         </div>
         </form>
       </div> 
@@ -45,24 +45,24 @@
             <h5>Survey</h5><br>
           <div class="text-left">
             <b>Age:</b><br>
-            <input type="radio" id="age" name="age" value="custom" onclick="setRequired('agetext');"> <input type="text" name="agetext" id="agetext"/><br>
-            <input type="radio" id="noageanswer" name="age" value="Prefer not to answer" onclick="removeRequired('agetext');" checked> Prefer not to answer<br><br>
+            <input type="radio" id="age" name="age" value="custom" onclick="setRequired('agetext');" checked> <input type="text" name="agetext" id="agetext"/><br>
+            <input type="radio" id="noageanswer" name="age" value="Prefer not to answer" onclick="removeRequired('agetext');"> Prefer not to answer<br><br>
           </div>
           <div class="text-left">
             <b>Occupation:</b><br>
-            <input type="radio" id="occupation" name="occupation" value="custom" onclick="setRequired('occupationtext');"> <input type="text" name="occupationtext" id="occupationtext"/><br>
-            <input type="radio" id="nooccupationanswer" name="occupation" value="Prefer not to answer" onclick="removeRequired('occupationtext');" checked> Prefer not to answer<br><br>
+            <input type="radio" id="occupation" name="occupation" value="custom" onclick="setRequired('occupationtext');" checked> <input type="text" name="occupationtext" id="occupationtext"/><br>
+            <input type="radio" id="nooccupationanswer" name="occupation" value="Prefer not to answer" onclick="removeRequired('occupationtext');"> Prefer not to answer<br><br>
           </div>
           <div class="text-left">
             <b>Gender:</b><br>
-            <input type="radio" id="maleanswer" name="gender" value="Male" onclick="removeRequired('gendertext');"> Male<br>
+            <input type="radio" id="maleanswer" name="gender" value="Male" onclick="removeRequired('gendertext');" checked> Male<br>
             <input type="radio" id="femaleanswer" name="gender" value="Female" onclick="removeRequired('gendertext');"> Female<br>
             <input type="radio" id="gender" name="gender" value="custom" onclick="setRequired('gendertext');"> Other: <input type="text" name="gendertext" id="gendertext"/><br>
-            <input type="radio" id="nogenderanswer" name="gender" value="Prefer not to answer" onclick="removeRequired('gendertext');" checked> Prefer not to answer<br><br>
+            <input type="radio" id="nogenderanswer" name="gender" value="Prefer not to answer" onclick="removeRequired('gendertext');"> Prefer not to answer<br><br>
           </div>
             <br>
         <div class="center" >
-          <input id="signupformbutton" type="submit" class="btn btn-block" value="Sign up"> 
+          <input id="signupformbutton" type="submit" class="btn btn-primary btn-block" value="Sign up"> 
         </div>
         </form>
       </div> 
@@ -80,7 +80,7 @@
           <h4 id="status_text">Progress: Not connected </h4>
         </div>
         <div class="center" id="start_button_div" style="display: block;">
-            <button class="btn btn-block" id="start_button" type="button" > Start </button>
+            <button class="btn btn-primary btn-block" id="start_button" type="button" > Start </button>
         </div>
       </div> 
     </div>
