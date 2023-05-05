@@ -281,6 +281,13 @@ async function stop(fromTimeout){
 
 io.on('connection', async (socket) => {
 
+  if (inited) {
+
+    if (pause_num%2 == 0) {
+      socket.emit("reload", false);
+    }
+    else socket.emit("reload", true);
+  } 
 
   if (indexSocket == null){
     indexSocket = socket;
@@ -306,14 +313,14 @@ io.on('connection', async (socket) => {
       if (soundscapes_listen){  // handle data on soundscapes page
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
-            if (data.UserName == user){
-              console.log("connected");
-              let str = "Timestamp: "+Date.now()+"; connected\n";
-              fs.appendFileSync(logfile, str);
-              bpm_connected = true;
-              indexSocket.emit("init123", "world");
-              console.log("init123 sent");
-            }
+            // if (data.UserName == user){
+            console.log("connected");
+            let str = "Timestamp: "+Date.now()+"; connected\n";
+            fs.appendFileSync(logfile, str);
+            bpm_connected = true;
+            indexSocket.emit("init123", "world");
+            console.log("init123 sent");
+            // }
           }
           else if (data.command == "Heartrate"){
             if (bpm_connected && inited){
@@ -382,18 +389,7 @@ io.on('connection', async (socket) => {
     });
   }
 
-
-
-
-
-
-  if (inited) {
-
-    if (pause_num%2 == 0) {
-      socket.emit("reload", false);
-    }
-    else socket.emit("reload", true);
-  }  
+ 
 
   socket.on("startsocket", async (arg) => {  // get sound file and send to browser
     let sound = audio.getFirstSound();
