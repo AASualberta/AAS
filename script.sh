@@ -23,15 +23,3 @@ if which node > /dev/null
         brew install node
     fi
 npm install
-npm install -g chromedriver # only thing i need in docker version
-
-if which python3 > /dev/null
-	then
-		echo "python3 is installed, skipping..."
-	else
-		echo "python3 is not installed"
-		brew install python3
-fi
-pip3 install --user numpy
-pip3 install --user requests
-pip3 install --user opencv-python

@@ -12,13 +12,14 @@
   var currentMode;
   var skiptimeout;
   var setprevtimeout;
+  var sound;
 
 
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
     console.log("init123 recv")
-    document.getElementById("stop").disabled = false;
-    socket.emit("restbpm", bpm);
+    document.getElementById("stop").disabled = false; // enable end session button
+    socket.emit("restbpm", bpm);  // ??
     // start playing right when loaded
     socket.emit("startsocket", null);
     setprevtimeout = setTimeout(setPrevBpm, 90000); // timeout after 1.5 minute (900000 ms) of first sound to set previous bpm in alg
@@ -89,6 +90,30 @@
   socket.on('loaded', function(msg){
     document.getElementById("h").innerHTML = "Loaded, you can now connect with the app";
   })
+
+  socket.on('first_sound', function(msg){
+    sound = new Howl({
+      src: ['../sounds/' + msg],
+      loop: true,
+      volume: volume,
+    });
+    sound.play();
+    sound.fade(0, 1, 5000); // fade in for 4 seconds
+  });
+
+  socket.on('next_sound', function(msg){
+    sound.fade(1, 0, 3000); // fade out for 3 seconds
+    sound.once('fade', function(){
+      sound.unload();
+      sound = new Howl({
+        src: ['../sounds/' + msg],
+        loop: true,
+        volume: volume,
+      });
+      sound.play();
+      sound.fade(0, 1, 4000); // fade in for 4 seconds
+    });
+  });
 
   function hideAlert(){
     document.getElementById("alert").style.visibility = "hidden";
@@ -165,8 +190,8 @@
 
 document.getElementById("volume-control").addEventListener("change", function(){
   var slideAmount = document.getElementById("volume-control").value;
-  socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
+  sound.volume(volume);
 });
 
 document.getElementById("epsilon_range").addEventListener("change", function() {
@@ -181,8 +206,3 @@ document.getElementById("alpha_range").addEventListener("change", function() {
   document.getElementById("alpha_value").innerHTML = alpha_range;
 });
 
-
-socket.on("volume",function(msg){
-  volume = parseFloat(msg);
-  document.getElementById("volume-control").value = volume;
-})

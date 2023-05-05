@@ -4,3 +4,6 @@
 
 brew update
 brew upgrade chromedriver
+
+in browser: Play, pause, volume
+in node: get soundscape, algo stuff

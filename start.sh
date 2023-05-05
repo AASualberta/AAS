@@ -1,9 +1,4 @@
 #!/bin/bash
-if [ -e chromedriver ]
-then
-    export PATH=$PATH:${PWD}
-    echo $(pwd)
-fi
 
 if [ ! -d "./log" ] 
 then

@@ -7,7 +7,7 @@ var serve = require('koa-static');
 const koaRouter = require('koa-router');
 const koaBody = require('koa-body');
 const render = require('koa-ejs');
-const seleniumtest = require('./selenium-test.js');
+const audio = require('./audio.js');
 const json = require('json')
 const fs = require('fs');
 
@@ -28,7 +28,6 @@ var timer;
 var skipList = [];
 
 var bpm_connected = false;
-var bpmUsedForAlg = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
 var inited = false;
@@ -63,7 +62,6 @@ router.post('/soundscape', async (ctx, next) => {
   console.log("in post s");
   drivelog = new Drive(user);
   logfile = "./log/" + user + ".log";
-  seleniumtest.setLogFile(logfile);
   
   restbpm(db.getRestBPM(user)); // set restbpm for user
 
@@ -72,13 +70,13 @@ router.post('/soundscape', async (ctx, next) => {
   }
 
   await ctx.render('soundscape');
-  if (!inited) {
-    bpmUsedForAlg = true;
-    console.log("bout to io");
-    //ioconnection();
-    console.log("bout to init");
-    initialize();
-  }
+  // if (!inited) {
+  //   bpmUsedForAlg = true;
+  //   console.log("bout to io");
+  //   //ioconnection();
+  //   console.log("bout to init");
+  //   initialize();
+  // }
 
   soundscapes_listen = true;
 
@@ -103,12 +101,12 @@ router.post('/signin', async (ctx, next) => {
     var re = db.findName(ctx.request.body['username']); // check if user exists
     if (re){
       user = re["name"]; // get user name
-      seleniumtest.loadValues(user); // load action values from file
+      audio.loadValues(user); // load action values from file
 
       // check if training time > 3hours
       if (db.findTime(user) > 10800000){
         mode = 1;
-        seleniumtest.setMode(1)
+        audio.setMode(1)
       }
 
       if (db.getRestBPM(user) > 0){
@@ -130,11 +128,11 @@ router.post('/signin', async (ctx, next) => {
   else {
     // if signed in/up, redirect to url '/soundscape'
     if (db.getRestBPM(user) > 0){
-      seleniumtest.loadValues(user); // load action values from file
+      audio.loadValues(user); // load action values from file
       // check if training time > 3hours
       if (db.findTime(user) > 10800000){
         mode = 1;
-        seleniumtest.setMode(1)
+        audio.setMode(1)
       }
       // redirect to the url '/soundscape'
       ctx.status = 307;
@@ -205,15 +203,13 @@ router.get('/', async (ctx, next) => {
 });
 
 async function initialize(){
-  await seleniumtest.init().then(()=>{
-      inited = true;
-      if (!bpm_connected){
-        indexSocket.emit("loaded");
-      }
-      else{ // already connnected from resting hr
-        indexSocket.emit("init123", "world");
-      }
-    })
+    inited = true;
+    if (!bpm_connected){
+      indexSocket.emit("loaded");
+    }
+    else{ // already connnected from resting hr
+      indexSocket.emit("init123", "world");
+    }
 }
 
 async function logSurvey(ctx, logfile){
@@ -240,7 +236,7 @@ async function logSurvey(ctx, logfile){
 }
 
 async function restbpm(arg){
-  seleniumtest.restBPM(arg);
+  audio.restBPM(arg);
 }
 
 async function logToDrive(){
@@ -277,7 +273,8 @@ async function stop(fromTimeout){
   var str = "Timestamp: "+Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
   fs.appendFileSync(logfile, str);
   db.updateTime(user, sessionTime);
-  seleniumtest.close(fromTimeout);
+  // might need to stop howler here?
+  process.exit();
 }
 
 
@@ -287,6 +284,7 @@ io.on('connection', async (socket) => {
 
   if (indexSocket == null){
     indexSocket = socket;
+    initialize();
   }
   else if (hgSocket == null){
     hgSocket = socket;
@@ -326,7 +324,7 @@ io.on('connection', async (socket) => {
                 total += 1;
                 timer.restart();
                 console.log(data.heartrate);
-                seleniumtest.addBPM(data.heartrate);
+                audio.addBPM(data.heartrate);
                 if (total == 5){ // switch
                   total = 0;
                   timer.switch();
@@ -397,12 +395,12 @@ io.on('connection', async (socket) => {
     else socket.emit("reload", true);
   }  
 
-  socket.on("startsocket", async (arg) => {
-    await seleniumtest.startFirstSound().then((e)=>{
-      let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
-      fs.appendFileSync(logfile, str);
-      socket.emit("next", e[0]);
-    });
+  socket.on("startsocket", async (arg) => {  // get sound file and send to browser
+    let sound = audio.getFirstSound();
+    socket.emit("firstsound", sound[0]);
+    let str = "Timestamp: "+ Date.now()+ "; Action: started" + sound[1] + "\n";
+    fs.appendFileSync(logfile, str);
+    socket.emit("next"); // set mode
     
     timer = new Timer(callbackfn, 75000);
     pause_num += 1;
@@ -445,7 +443,7 @@ io.on('connection', async (socket) => {
 
   socket.on("mode", async (arg) => {
     mode = arg;
-    seleniumtest.setMode(mode);
+    audio.setMode(mode);
   })
 
   socket.on("pausesocket", async (arg) => {
@@ -459,25 +457,20 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on("changeVolume", async (arg) => {
-    var change_nums = Math.floor(parseFloat(arg) / 3);
-    seleniumtest.changeVolume(change_nums);
-  });
-
   socket.on("epsilon", async (arg) =>{
-    seleniumtest.changeEpsilon(parseFloat(arg));
+    audio.changeEpsilon(parseFloat(arg));
     let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
   socket.on("alpha", async(arg) => {
-    seleniumtest.changeAlpha(parseFloat(arg));
+    audio.changeAlpha(parseFloat(arg));
     let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
   socket.on("setprevious", async() => {
-    seleniumtest.setPrevBPM();
+    audio.setPrevBPM();
   })
 
   function callbackfn(){ // chnage this so it ends session
@@ -488,25 +481,20 @@ io.on('connection', async (socket) => {
   
 
   async function playNext(action){
-      var msg = seleniumtest.playNext(mode, action);
-      msg.then(async (e)=>{
-        var a = null;
-        switch(action){
-          case 1:
-            a = "next_pressed";
-            break;
-          case 0:
-            a = "switched";
-            break;
-        }
-        let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
-        fs.appendFileSync(logfile, str);
-        socket.emit("next", e[0]);
-        seleniumtest.getVolume().then((v) =>{
-          socket.emit("volume", v);
-        });
-        
-      })
+    var sound = audio.getNext(mode, action);
+    var a = null;
+    switch(action){
+      case 1:
+        a = "next_pressed";
+        break;
+      case 0:
+        a = "switched";
+        break;
+    }
+    let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + sound[1]+ "\n");
+    fs.appendFileSync(logfile, str);
+    socket.emit("next_sound", sound[0]);
+    socket.emit("next");
   }
   var Timer = function(callback, delay) {
       var timerId, start, fixedtime = delay
@@ -514,7 +502,7 @@ io.on('connection', async (socket) => {
       var lastStart = Date.now();
       var total = 0
       this.pause = function() {
-          seleniumtest.pause()
+          audio.pause()
           clearTimeout(timerId);
           let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
           fs.appendFileSync(logfile, str);
@@ -523,14 +511,11 @@ io.on('connection', async (socket) => {
 
       this.resume = async function() {
           if(!first){
-            seleniumtest.pause()
+            audio.pause()  // do in browaser
             let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
             fs.appendFileSync(logfile, str);
           }
           else{
-            seleniumtest.getVolume().then((v) =>{
-              socket.emit("volume", v);
-            });
             first = false;
           }
           start = Date.now();
