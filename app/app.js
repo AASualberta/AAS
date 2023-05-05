@@ -308,14 +308,14 @@ io.on('connection', async (socket) => {
       if (soundscapes_listen){  // handle data on soundscapes page
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
-            if (data.UserName == user){
-              console.log("connected");
-              let str = "Timestamp: "+Date.now()+"; connected\n";
-              fs.appendFileSync(logfile, str);
-              bpm_connected = true;
-              indexSocket.emit("init123", "world");
-              console.log("init123 sent");
-            }
+            //if (data.UserName == user){
+            console.log("connected");
+            let str = "Timestamp: "+Date.now()+"; connected\n";
+            fs.appendFileSync(logfile, str);
+            bpm_connected = true;
+            indexSocket.emit("init123", "world");
+            console.log("init123 sent");
+            //}
           }
           else if (data.command == "Heartrate"){
             if (bpm_connected && inited){
