@@ -16,7 +16,6 @@
 
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
-    console.log("init123 recv")
     document.getElementById("stop").disabled = false;
     socket.emit("restbpm", bpm);
     // start playing right when loaded
@@ -44,7 +43,6 @@
 
   socket.on('reload', function(msg) {
     pausebutton.classList.toggle("playDisabled");
-    console.log("reload" + msg)
     if (msg) {
       first = false;
       document.getElementById("h").innerHTML = currentMode;
@@ -85,6 +83,14 @@
     document.getElementById("alert").style.visibility = "visible";
     setTimeout(hideAlert, 5000);
   })
+
+  socket.on('nosignal', function(msg){ 
+    title.innerHTML = "Signal from watch is lost. Ending Session.";
+    alert.innerHTML = "No signal detected! Please contact Martha!";
+    alert.style.visibility = "visible";
+    nextbutton.disabled = true;
+    stopbutton.disabled = true;
+  });
 
   socket.on('loaded', function(msg){
     document.getElementById("h").innerHTML = "Loaded, you can now connect with the app";

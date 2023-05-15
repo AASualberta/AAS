@@ -183,7 +183,7 @@ async startFirstSound(){
     //console.log(this.select_msg)
     return msg.then((e)=>{
         let name = e;
-        return [name,"; soundscape: "+ name + "; value index: "+ ind.toString() + this.select_msg]
+        return [name, "; value index: "+ ind.toString() + this.select_msg]
     })
 }
 
@@ -223,7 +223,7 @@ async playNext(mode, pressed){
     });
     return msg.then((e)=>{
         let name = e[0];
-        return [name,"; soundscape: "+ name + "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+        return [name, "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }
 
@@ -240,7 +240,6 @@ async init(){
         3. Select a part of categories.
         4. Initialize the browser and all tabs, load all sounds.
     */
-    console.log('initing sounds')
     var SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
     /*var allSounds = [];
     // Initialize the driver.
@@ -266,7 +265,6 @@ async init(){
 
     //Open all tabs and wait until all sounds are loaded.
     await this.openTabs(lib);
-    console.log('loaded the sounds')
     return true;
 }
 

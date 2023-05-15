@@ -62,7 +62,7 @@ class Algorithm{
 		this.num = num; // num of sounds
 		this.values = []; // action values
 		this.policy = []; // probability of choosing an action
-		this.epsilon = 1;
+		this.epsilon = 2/3;
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
 		// equal probability for initialization
@@ -148,7 +148,7 @@ class Algorithm{
 		if (this.mode == 0) { //training
 			m = "training";
 			if (pressed){
-				this.current = this.Greedy(pressed, rew, false);
+				this.current = this.Greedy(pressed, rew, true);
 			}
 			else{
 				this.current = this.epsilonGreedy();
@@ -171,7 +171,11 @@ class Algorithm{
 
 	Greedy(pressed, rew, isRandom){
 		if (isRandom) {
-			return Math.floor(Math.random() * this.num);
+			var ind = Math.floor(Math.random() * this.num);
+			while (ind == this.current) {
+				ind = Math.floor(Math.random() * this.num);
+			}
+			return ind;
 		}
 		var current;
 
@@ -232,7 +236,7 @@ class Algorithm{
 
 	setPrevBPM(d){
 		this.previous_bpm = d;
-		console.log("prev set to " + d);
+		//console.log("prev set to " + d);
 	}
 
 	/*

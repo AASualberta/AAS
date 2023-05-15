@@ -21,6 +21,7 @@
     "axios": "^0.21.1",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.0",
+    "crypto": "^1.0.1",
     "g": "^2.0.1",
     "googleapis": "^104.0.0",
     "jquery": "^3.6.0",
