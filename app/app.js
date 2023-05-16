@@ -20,7 +20,6 @@ const router = koaRouter();
 
 const server = require('http').createServer(app.callback());
 var io = require('socket.io')(server);
-var currentSocket;
 var hgSocket = null;
 var indexSocket = null;
 
@@ -28,19 +27,15 @@ var timer;
 var skipList = [];
 
 var bpm_connected = false;
-var bpmUsedForAlg = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
 var inited = false;
-var playing = false;
 
 var drivelog;
 var logfile;
 var user = null;
-var tempuser = null; // username entered at signup, used before signup is complete.
 var isAdmin = false;
 var restBPM;
-var signupanswers;
 
 var soundscapes_listen = false;
 var signup_listen = false;
@@ -381,6 +376,8 @@ io.on('connection', async (socket) => {
   indexSocket.emit("isAdmin", isAdmin);
   indexSocket.emit("setMode", mode); 
 
+  // handle sockets disconnecting
+
   indexSocket.on('disconnect', () => {
     indexSocket = null;
     console.log(`indexSocket ${socket.id} disconnected.`);
@@ -390,12 +387,11 @@ io.on('connection', async (socket) => {
     hgSocket.on('disconnect', () => {
       hgSocket = null;
       console.log(`hgSocket ${socket.id} disconnected.`);
+      setTimeout(function(){  // wait 2 seconds before stopping
+        stop(true);
+      }, 2000);
     });
   }
-
-
-
-
 
 
   if (inited) {
@@ -406,18 +402,18 @@ io.on('connection', async (socket) => {
     else socket.emit("reload", true);
   }  
 
-  socket.on("startsocket", async (arg) => {
+  indexSocket.on("startsocket", async (arg) => {
     await seleniumtest.startFirstSound().then((e)=>{
       let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
       fs.appendFileSync(logfile, str);
-      socket.emit("next", e[0]);
+      indexSocket.emit("next", e[0]);
     });
     
     timer = new Timer(callbackfn, 125000);  // change back !!!!!!1
     pause_num += 1;
   });
 
-  socket.on("nextsocket", async (arg) => {
+  indexSocket.on("nextsocket", async (arg) => {
     let canskip = true;
     if (skipList.length < 4){
       skipList.push(Date.now());
@@ -428,7 +424,7 @@ io.on('connection', async (socket) => {
         skipList.push(Date.now());
       }
       else{
-        socket.emit('surfing', null); // alert using he is skipping too much
+        indexSocket.emit('surfing', null); // alert using he is skipping too much
         canskip = false;
       }
     }
@@ -440,7 +436,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on("stopsocket", async (arg) => {
+  indexSocket.on("stopsocket", async (arg) => {
     if (arg){ // timeout
       let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
       fs.appendFileSync(logfile, str);
@@ -448,16 +444,16 @@ io.on('connection', async (socket) => {
     stop(arg);
   });
   
-  socket.on('restbpm', async (arg)=> {
+  indexSocket.on('restbpm', async (arg)=> {
     restbpm(arg);
   })
 
-  socket.on("mode", async (arg) => {
+  indexSocket.on("mode", async (arg) => {
     mode = arg;
     seleniumtest.setMode(mode);
   })
 
-  socket.on("pausesocket", async (arg) => {
+  indexSocket.on("pausesocket", async (arg) => {
     pause_num += 1;
     if (pause_num%2 == 0) {
       timer.pause();
@@ -467,31 +463,31 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on("changeVolume", async (arg) => {
+  indexSocket.on("changeVolume", async (arg) => {
     var change_nums = Math.floor(parseFloat(arg) / 3);
     seleniumtest.changeVolume(change_nums);
   });
 
-  socket.on("epsilon", async (arg) =>{
+  indexSocket.on("epsilon", async (arg) =>{
     seleniumtest.changeEpsilon(parseFloat(arg));
     let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
-  socket.on("alpha", async(arg) => {
+  indexSocket.on("alpha", async(arg) => {
     seleniumtest.changeAlpha(parseFloat(arg));
     let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
-  socket.on("setprevious", async() => {
+  indexSocket.on("setprevious", async() => {
     seleniumtest.setPrevBPM();
   })
 
   function callbackfn(){ // chnage this so it ends session
     let str = ("Timestamp: " + Date.now() + "; No signal from watch!\n");
     fs.appendFileSync(logfile, str);
-    socket.emit("nosignal", null);
+    indexSocket.emit("nosignal", null);
     setTimeout(function(){  // wait 2 seconds before stopping
       stop(true);
   }, 2000);
@@ -513,9 +509,9 @@ io.on('connection', async (socket) => {
         }
         let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
         fs.appendFileSync(logfile, str);
-        socket.emit("next", e[0]);
+        indexSocket.emit("next", e[0]);
         seleniumtest.getVolume().then((v) =>{
-          socket.emit("volume", v);
+          indexSocket.emit("volume", v);
         });
         
       })
@@ -542,7 +538,7 @@ io.on('connection', async (socket) => {
           }
           else{
             seleniumtest.getVolume().then((v) =>{
-              socket.emit("volume", v);
+              indexSocket.emit("volume", v);
             });
             first = false;
           }
@@ -561,7 +557,7 @@ io.on('connection', async (socket) => {
 
       this.restart = function() {
         if (!this.checkIota()){
-          socket.emit("iota", null);
+          indexSocket.emit("iota", null);
           setTimeout(function(){  // wait 2 seconds before stopping
             stop(true);
           }, 2000);
@@ -573,7 +569,7 @@ io.on('connection', async (socket) => {
 
       this.switch = function (){
           if (!this.checkIota()){
-            socket.emit("iota", null);
+            indexSocket.emit("iota", null);
             setTimeout(function(){  // wait 2 seconds before stopping
               stop(true);
           }, 2000);
@@ -617,7 +613,7 @@ io.on('connection', async (socket) => {
   
     this.restart = function() {
       if (!this.checkIota()){
-        socket.emit("iota", null);
+        indexSocket.emit("iota", null);
         setTimeout(function(){  // wait 2 seconds before stopping
           stop(true);
         }, 2000);

@@ -21,6 +21,10 @@ socket.on('updateProgress', () => {
 	progress+=1;
 })
 
+socket.on('nosignal', () => {
+	statustext.textContent = "No signal from watch! Please contact Martha! \n Ending Session.";
+});
+
 startbutton.addEventListener("click", function(){
 	document.getElementById("start_button_div").style.display = "none";
 	document.getElementById("status").style.display = "block";
