@@ -29,7 +29,7 @@ function indexOfMax(arr) {
  */
 function readActionValuesFromFile(filename) {
 	if (!fs.existsSync(filename)) {
-		console.log("doesn't exist")
+		console.log("logfile doesn't exist")
 		return null;
 	}
 	var lines = fs.readFileSync(filename, 'utf-8').split('\n');
@@ -62,7 +62,7 @@ class Algorithm{
 		this.num = num; // num of sounds
 		this.values = []; // action values
 		this.policy = []; // probability of choosing an action
-		this.epsilon = 1;
+		this.epsilon = 2/3;
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
 		// equal probability for initialization
@@ -148,7 +148,7 @@ class Algorithm{
 		if (this.mode == 0) { //training
 			m = "training";
 			if (pressed){
-				this.current = this.Greedy(pressed, rew, false);
+				this.current = this.Greedy(pressed, rew, true);
 			}
 			else{
 				this.current = this.epsilonGreedy();
@@ -171,7 +171,11 @@ class Algorithm{
 
 	Greedy(pressed, rew, isRandom){
 		if (isRandom) {
-			return Math.floor(Math.random() * this.num);
+			var ind = Math.floor(Math.random() * this.num);
+			while (ind == this.current) {
+				ind = Math.floor(Math.random() * this.num);
+			}
+			return ind;
 		}
 		var current;
 
@@ -230,14 +234,16 @@ class Algorithm{
 		this.upperbound = this.restbpm + 5; // upper bound of the restbpm
 	}
 
+	setPrevBPM(d){
+		this.previous_bpm = d;
+		//console.log("prev set to " + d);
+	}
+
 	/*
  	* Return reward for previous sound
  	*/
 	generateReward(d, pressed){
 		var bpm = d; 
-		if (this.previous_bpm == -1) {
-			this.previous_bpm = this.upperbound;
-		}
 		var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
 		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
 		var rew = Math.max(rate_dif, rest_dif);

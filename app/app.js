@@ -1,6 +1,5 @@
 // app/app.js
 const http = require('http');
-const request = require('request');
 const path = require('path');
 const Koa = require('koa');
 var serve = require('koa-static');
@@ -18,25 +17,30 @@ const Drive = require('./drivelog');
 const app = module.exports = new Koa();
 const router = koaRouter();
 
-const server = require('http').createServer(app.callback());
+const server = http.createServer(app.callback());
 var io = require('socket.io')(server);
-var currentSocket;
+var browserConnected = false;
+var hgConnected = false;
+var browserSocket;
+var killOnDisconnect = false;
+var firstHR = true;
 
 var timer;
 var skipList = [];
 
 var bpm_connected = false;
-var bpmUsedForAlg = false;
 var mode = 0; // default is training mode
 var pause_num = 0;
 var inited = false;
-var playing = false;
 
 var drivelog;
 var logfile;
 var user = null;
 var isAdmin = false;
 var restBPM;
+
+var soundscapes_listen = false;
+var signup_listen = false;
 
 render(app, {
   root: path.join(__dirname, 'view'),
@@ -53,7 +57,7 @@ app
   .use(router.allowedMethods());
 
 router.post('/soundscape', async (ctx, next) => {
-  
+  killOnDisconnect = true;
   drivelog = new Drive(user);
   logfile = "./log/" + user + ".log";
   seleniumtest.setLogFile(logfile);
@@ -67,16 +71,18 @@ router.post('/soundscape', async (ctx, next) => {
   await ctx.render('soundscape');
   if (!inited) {
     bpmUsedForAlg = true;
+    
     initialize();
-    ioconnection();
   }
+
+  soundscapes_listen = true;
+
   // log user mood description
   let str = "Timestamp: "+Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
   fs.appendFileSync(logfile, str);
 })
 
 router.get('/soundscape', async (ctx, next) => {
-  console.log("getting");
   if (inited && user) {
     await ctx.render('soundscape');
   }
@@ -86,7 +92,7 @@ router.get('/soundscape', async (ctx, next) => {
 })
 
 router.post('/signin', async (ctx, next) => {
-  if (!user) {
+  if (user != ctx.request.body['username']) {
     var re = db.findName(ctx.request.body['username']); // check if user exists
     if (re){
       user = re["name"]; // get user name
@@ -98,9 +104,15 @@ router.post('/signin', async (ctx, next) => {
         seleniumtest.setMode(1)
       }
 
-      // redirect to the url '/soundscape'
-      ctx.status = 307;
-      ctx.redirect("/soundscape");
+      if (db.getRestBPM(user) > 0){
+        // redirect to the url '/soundscape'
+        ctx.status = 307;
+        ctx.redirect("/soundscape");
+      }
+      else{
+        ctx.status = 307;
+        ctx.redirect("/heartrate");
+      }
     }
     else {
       // haven't signed up yet, requires to sign up first
@@ -110,7 +122,21 @@ router.post('/signin', async (ctx, next) => {
   }
   else {
     // if signed in/up, redirect to url '/soundscape'
-    ctx.redirect("/soundscape");
+    if (db.getRestBPM(user) > 0){
+      seleniumtest.loadValues(user); // load action values from file
+      // check if training time > 3hours
+      if (db.findTime(user) > 10800000){
+        mode = 1;
+        seleniumtest.setMode(1)
+      }
+      // redirect to the url '/soundscape'
+      ctx.status = 307;
+      ctx.redirect("/soundscape");
+    }
+    else{
+      ctx.status = 307;
+      ctx.redirect("/heartrate");
+    }
   }
 })
 
@@ -122,24 +148,44 @@ router.post('/end', async(ctx, next) => {
 })
 
 router.get('/end', async(ctx, next) => {
-  await ctx.render('end');
+  if (inited && user) {
+    await ctx.render('end');
+  }
+  else{
+    ctx.redirect("/");
+  }
 })
 
 router.post('/signup', async(ctx, next) => {
-    // add a new user to database
-    newUserLogFile = db.addUser(ctx.request.body['username'], restBPM);
-    logSurvey(ctx, newUserLogFile);
-    let str = "resting heart rate: " + restBPM + "\n";
-    fs.appendFileSync(newUserLogFile, str);
-    ctx.response.status = 200;
-    ctx.response.body = "<p>You have successfully signed up!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+  // add a new user to database
+  user = ctx.request.body['username'];
+  logfile = db.addUser(user, 0);
+  logSurvey(ctx, logfile);
+  ctx.response.status = 307;
+  ctx.redirect("/heartrate");
 })
 
+router.post('/heartrate', async(ctx, next) => {
+  signup_listen = true;
+  await ctx.render('heartrate');
+  //getHeartRateAtSignUp();
+  console.log(ctx.request.body);
+})
+
+router.get('/heartrate', async(ctx, next) => {
+  console.log("in get h");
+  if (user) {
+    signup_listen = true;
+    await ctx.render('heartrate');
+  }
+  else{
+    ctx.redirect("/");
+  }
+})
 
 router.get('/', async (ctx, next) => {
-  if (!user) {
+  if (!user || !inited) {
     await ctx.render('index');
-    getHeartRateAtSignUp();
   }
   else {
     ctx.redirect("/soundscape");
@@ -149,6 +195,12 @@ router.get('/', async (ctx, next) => {
 async function initialize(){
   await seleniumtest.init().then(()=>{
       inited = true;
+      if (!bpm_connected){
+        browserSocket.emit("loaded");
+      }
+      else{ // already connnected from resting hr
+        browserSocket.emit("init123", "world");
+      }
     })
 }
 
@@ -204,7 +256,7 @@ async function logToDrive(){
 
 async function stop(fromTimeout){
   var sessionTime;
-  if (typeof timer == 'undefined'){ // timer not initialized means play never clicked
+  if (typeof timer == 'undefined' || !inited){ // timer not initialized means play never clicked
     sessionTime = 0;
   }
   else{
@@ -216,257 +268,568 @@ async function stop(fromTimeout){
   seleniumtest.close(fromTimeout);
 }
 
-function getHeartRateAtSignUp(){
-  let firstRequest = true;
-  let startTime;
-  let total = 0;
-  let average = 0;
-  io.on('connection', async(socket) => { 
-    currentSocket = socket;
-    currentSocket.on('getBPM', () => {
-      router.post('/test', async (ctx, next) =>{
-        if (bpmUsedForAlg){ // using /test route for soundscapes page
-          if (!bpm_connected){
-            if (inited) {
-              let str = "Timestamp: "+Date.now()+"; connected\n";
-              fs.appendFileSync(logfile, str);
-              currentSocket.emit("init123", "world");
-              bpm_connected = true;
-              if (ctx.request.body){
-                seleniumtest.addBPM(ctx.request.body);
-              }
-            }
-          }
-          else
-            if (ctx.request.body && inited) {
-              seleniumtest.addBPM(ctx.request.body);
-            }
-        }
-        else{ // // using /test route for signup
-          if (firstRequest){
-            startTime = Date.now();
-            currentSocket.emit('updateProgress',null);
-            firstRequest = false;
-          }
-          if (Date.now()-startTime > 30000){ // every 30 seconds
-            startTime = Date.now()
-            currentSocket.emit('updateProgress',null);
-            total += 1;
-            if (total > 3){ // after 1.5 minutes start averaging hr
-              average+=parseInt(ctx.request.body);
-            }
-            if (total==10){ // after 5 minutes return average
-              restBPM = average/7;
-            }
-          }
-        }
-      })
-    })
-
-  })
-}
-
-
-function ioconnection(){
-  io.on('connection', async (socket) => {
-    currentSocket = socket;
-      router.post('/test', async (ctx, next) =>{
-        if (!bpm_connected){
-          if (inited) {
-            let str = "Timestamp: "+Date.now()+"; connected\n";
-            fs.appendFileSync(logfile, str);
-            socket.emit("init123", "world");
-            bpm_connected = true;
-            if (ctx.request.body){
-              seleniumtest.addBPM(ctx.request.body);
-            }
-          }
-        }
-        else
-          if (ctx.request.body && inited) {
-            seleniumtest.addBPM(ctx.request.body);
-          }
-      });
-      socket.emit("isAdmin", isAdmin);
-      socket.emit("setMode", mode);  
-  }); 
-}
 
 io.on('connection', async (socket) => {
-      //console.log(`Socket ${socket.id} connected. pause_num:`, pause_num);
 
-      socket.on('disconnect', () => {
-        //console.log(`Socket ${socket.id} disconnected.`);
-      });
-      if (inited) {
+  if (!browserConnected){
+    socket.join('browser');
+    console.log("browser connected");
+    browserConnected = true;
+    browserSocket = socket;
+  }
+  else if (!hgConnected){
+    socket.join('hg');
+    console.log("hg connected");
+    hgConnected = true;
+  }
+  else{
+    console.log("too many connections");
+    // kill here?
+  }
 
-        if (pause_num%2 == 0) {
-          socket.emit("reload", false);
-        }
-        else socket.emit("reload", true);
-      }
 
-      socket.on("startsocket", async (arg) => {
-        await seleniumtest.startFirstSound().then((e)=>{
-          let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
+  let total = 0;
+  let average = 0;
+
+  socket.on('message', function name(data) {
+    fs.appendFileSync(logfile, "Timestamp: "+Date.now()+"; received message from watch: "+JSON.stringify(data)+"\n");
+    console.log(data)
+    if (soundscapes_listen){  // handle data on soundscapes page
+      if (data.hasOwnProperty("command")){
+        if (data.command == "Connect"){
+          //if (data.UserName == user){
+          console.log("connected");
+          let str = "Timestamp: "+Date.now()+"; connected with watch\n";
           fs.appendFileSync(logfile, str);
-          socket.emit("next", e[0]);
-        });
-        
-        timer = new Timer(callbackfn, seleniumtest.timer);
-        pause_num += 1;
-      });
-
-      socket.on("nextsocket", async (arg) => {
-        let canskip = true;
-        if (skipList.length < 4){
-          skipList.push(Date.now());
+          bpm_connected = true;
+          console.log("hg init123");
+          io.sockets.to("browser").emit("init123", "world");
+          //}
         }
-        else{
-          if ((Date.now()-skipList[0]) > 600000){
-            skipList.shift(); // remove skip if it has been more than 10 minutes
-            skipList.push(Date.now());
-          }
-          else{
-            socket.emit('surfing', null); // alert using he is skipping too much
-            canskip = false;
-          }
-        }
-        if (canskip){
-          if (pause_num%2 == 0) {
-            timer.resume();
-          }
-          timer.restart();
-        }
-      });
-
-      socket.on("stopsocket", async (arg) => {
-        if (arg){ // timeout
-          let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
-          fs.appendFileSync(logfile, str);
-        }
-        stop(arg);
-      });
-      
-      socket.on('restbpm', async (arg)=> {
-        restbpm(arg);
-      })
-
-      socket.on("mode", async (arg) => {
-        mode = arg;
-        seleniumtest.setMode(mode);
-      })
-
-      socket.on("pausesocket", async (arg) => {
-        pause_num += 1;
-        //console.log(pause_num)
-        if (pause_num%2 == 0) {
-          timer.pause();
-        }
-        else{
-          timer.resume();
-        }
-      });
-
-      socket.on("changeVolume", async (arg) => {
-        var change_nums = Math.floor(parseFloat(arg) / 3);
-        seleniumtest.changeVolume(change_nums);
-      });
-
-      socket.on("epsilon", async (arg) =>{
-        seleniumtest.changeEpsilon(parseFloat(arg));
-        let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
-        fs.appendFileSync(logfile, str);
-      })
-
-      socket.on("alpha", async(arg) => {
-        seleniumtest.changeAlpha(parseFloat(arg));
-        let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
-        fs.appendFileSync(logfile, str);
-      })
-
-      function callbackfn(){
-          timer.switch(this, seleniumtest.timeouts)
-      }
-      
-
-      async function playNext(action){
-          var msg = seleniumtest.playNext(mode, action);
-          msg.then(async (e)=>{
-            var a = null;
-            switch(action){
-              case 1:
-                a = "next_pressed";
-                break;
-              case 0:
-                a = "switched";
-                break;
+        else if (data.command == "Heartrate"){
+          if (bpm_connected && inited){
+            if (firstHR){ // ignore first hr (bad)
+              firstHR = false;
+              if (timer){
+                console.log("in first hr")
+                timer.stop();
+                timer.start();
+              }
             }
-            let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
-            fs.appendFileSync(logfile, str);
-            socket.emit("next", e[0]);
-            seleniumtest.getVolume().then((v) =>{
-              socket.emit("volume", v);
-            });
-            
-          })
+            else{ 
+              total += 1;
+              seleniumtest.addBPM(data.heartrate);
+              if (total == 5) { // switch when total = 5
+                let timeElapsed = timer.getSessionTime();
+                if (timeElapsed + db.findTime(user) > 10800000){
+                  mode = 1;
+                  seleniumtest.setMode(1);
+                  io.sockets.to("browser").emit("setMode", mode);
+                }
+                total = 0;
+                timer.switch();
+              }
+            }
+          }
+        }
+      } 
+    }
+    else if (signup_listen){  // handle data on signup page (get resting hr)
+      if (!timer){
+        timer = new SimpleTimer(callbackfn);
       }
-      var Timer = function(callback, delay) {
-          var timerId, start, fixedtime = delay
-          var first = true;
-          var lastStart = Date.now();
-          var total = 0
-          this.pause = function() {
-              seleniumtest.pause()
-              clearTimeout(timerId);
-              let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
-              fs.appendFileSync(logfile, str);
-              total += Date.now() - lastStart; // update time spent in training
-          };
-
-          this.resume = async function() {
-              if(!first){
-                seleniumtest.pause()
-                let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
-                fs.appendFileSync(logfile, str);
+      if (data.hasOwnProperty("command")){
+        if (data.command == "Connect"){
+          //if (data.UserName == user){
+            console.log("connected");
+            bpm_connected = true;
+          //}
+        }
+        else if (data.command == "Heartrate"){
+          if (bpm_connected){
+            if (firstHR){ // ignore first hr (bad)
+              firstHR = false;
+              io.sockets.to("browser").emit('updateProgress', null);
+              timer.start();
+            }
+            else{
+              var hr = data.heartrate
+              io.sockets.to("browser").emit('updateProgress', null);
+              total += 1;
+              if (total > 2){ // after 2 minutes start averaging hr (first is ignored)
+                average+=hr;
               }
-              else{
-                seleniumtest.getVolume().then((v) =>{
-                  socket.emit("volume", v);
-                });
-                first = false;
+              if (total==5){ // after 5 minutes return average
+                if (timer.stopWithIota()){
+                  timer = null;
+                  total = 0;
+                  restBPM = average/3;
+                  let str = "resting heart rate: " + restBPM + "\n";
+                  fs.appendFileSync(logfile, str);
+                  db.addUser(user, restBPM);
+                  setTimeout(function(){  // wait half a second before stopping
+                    stop(true);
+                  }, 500);
+                }
+                else{
+                  io.sockets.to("browser").emit('nosignal', null);
+                  setTimeout(function(){  // wait 1 seconds before stopping
+                    stop(true);
+                  }, 1000);
+                }
               }
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
-              lastStart = Date.now();  
-          };
-
-          this.restart = function() {
-              playNext(1)
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
-          };
-
-          this.switch = function (){
-              playNext(0)
-              start = Date.now();
-              clearTimeout(timerId);
-              timerId = setTimeout(callback, fixedtime);
+            }
           }
+        }
+      } 
+    }
+    io.emit('message', data)
+  })
 
-          this.getSessionTime = function(){
-            total += Date.now() - lastStart; // update time spent in training
-            return total;
-          }
+  io.sockets.to("browser").emit("isAdmin", isAdmin);
+  io.sockets.to("browser").emit("setMode", mode); 
 
-          this.resume();
-      };
+  // handle sockets disconnecting
+
+  socket.on('disconnect', () => {
+    console.log(`socket ${socket.id} disconnected.`);
+    if (killOnDisconnect){
+      setTimeout(function(){  // wait 2 seconds before stopping
+        if (killOnDisconnect){
+          stop(true);
+        }
+      }, 2000);
+    }
   });
 
+
+  if (inited) {
+
+    if (pause_num%2 == 0) {
+      socket.emit("reload", false);
+    }
+    else socket.emit("reload", true);
+  }  
+
+  socket.on("startsocket", async (arg) => {
+    await seleniumtest.startFirstSound().then((e)=>{
+      let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
+      fs.appendFileSync(logfile, str);
+      socket.emit("next", e[0]);
+    });
+    timer = new SimpleTimer(callbackfn);
+    pause_num += 1;
+  });
+
+  socket.on("nextsocket", async (arg) => {
+    let canskip = true;
+    if (skipList.length < 4){
+      skipList.push(Date.now());
+    }
+    else{
+      if ((Date.now()-skipList[0]) > 600000){
+        skipList.shift(); // remove skip if it has been more than 10 minutes
+        skipList.push(Date.now());
+      }
+      else{
+        socket.emit('surfing', null); // alert using he is skipping too much
+        canskip = false;
+      }
+    }
+    if (canskip){
+      if (pause_num%2 == 0) {
+        timer.resume();
+      }
+      timer.next();
+    }
+  });
+
+  socket.on("stopsocket", async (arg) => {
+    if (arg){ // timeout
+      let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
+      fs.appendFileSync(logfile, str);
+    }
+    killOnDisconnect = false;
+    stop(arg);
+  });
+  
+  socket.on('restbpm', async (arg)=> {
+    console.log("restbpm", arg);
+    restbpm(arg);
+  })
+
+  socket.on("mode", async (arg) => {
+    mode = arg;
+    seleniumtest.setMode(mode);
+  })
+
+  socket.on("pausesocket", async (arg) => {
+    pause_num += 1;
+    if (pause_num%2 == 0) {
+      timer.pause();
+    }
+    else{
+      timer.resume();
+    }
+  });
+
+  socket.on("changeVolume", async (arg) => {
+    console.log("changeVolume", arg);
+    var change_nums = Math.floor(parseFloat(arg) / 3);
+    seleniumtest.changeVolume(change_nums);
+  });
+
+  socket.on("epsilon", async (arg) =>{
+    seleniumtest.changeEpsilon(parseFloat(arg));
+    let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
+    fs.appendFileSync(logfile, str);
+  })
+
+  socket.on("alpha", async(arg) => {
+    seleniumtest.changeAlpha(parseFloat(arg));
+    let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
+    fs.appendFileSync(logfile, str);
+  })
+
+  socket.on("setprevious", async() => {
+    seleniumtest.setPrevBPM();
+  })
+
+  function callbackfn(){ // chnage this so it ends session
+    let str = ("Timestamp: " + Date.now() + "; No signal from watch!\n");
+    fs.appendFileSync(logfile, str);
+    io.sockets.to("browser").emit('nosignal', null);
+    setTimeout(function(){  // wait 2 seconds before stopping
+      stop(true);
+  }, 2000);
+  }
+  
+
+  async function playNext(action){
+      var msg = seleniumtest.playNext(mode, action);
+      msg.then(async (e)=>{
+        var a = null;
+        switch(action){
+          case 1:
+            a = "next_pressed";
+            firstHR = true;  // reset firstHR to ignore first hr after user switches
+            break;
+          case 0:
+            a = "switched";
+            break;
+        }
+        let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
+        fs.appendFileSync(logfile, str);
+        socket.emit("next", e[0]);
+        seleniumtest.getVolume().then((v) =>{
+          io.sockets.to("browser").emit("volume", v);
+        });
+        
+      })
+  }
+  // var Timer = function(callback, delay) {
+  //     var timerId, start;
+  //     var fixedtime = delay;
+  //     var first = true;
+  //     var lastStart = Date.now();
+  //     var total = 0;
+  //     this.pause = function() {
+  //         seleniumtest.pause()
+  //         clearTimeout(timerId);
+  //         let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
+  //         fs.appendFileSync(logfile, str);
+  //         total += Date.now() - lastStart; // update time spent in training
+  //     };
+
+  //     this.resume = async function() {
+  //         if(!first){
+  //           seleniumtest.pause()
+  //           let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
+  //           fs.appendFileSync(logfile, str);
+  //         }
+  //         else{
+  //           seleniumtest.getVolume().then((v) =>{
+  //             indexSocket.emit("volume", v);
+  //           });
+  //           first = false;
+  //         }
+  //         start = Date.now();
+  //         clearTimeout(timerId);
+  //         timerId = setTimeout(callback, fixedtime);
+  //         lastStart = Date.now();  
+  //     };
+
+  //     this.next = function() {
+  //       playNext(1)
+  //       start = Date.now();
+  //       clearTimeout(timerId);
+  //       timerId = setTimeout(callback, fixedtime);
+  //     };
+
+  //     this.restart = function() {
+  //       if (!this.checkIota()){
+  //         indexSocket.emit("iota", null);
+  //         setTimeout(function(){  // wait 2 seconds before stopping
+  //           stop(true);
+  //         }, 2000);
+  //       }
+  //       start = Date.now();
+  //       clearTimeout(timerId);
+  //       timerId = setTimeout(callback, fixedtime);
+  //     };
+
+  //     this.switch = function (){
+  //         if (!this.checkIota()){
+  //           indexSocket.emit("iota", null);
+  //           setTimeout(function(){  // wait 2 seconds before stopping
+  //             stop(true);
+  //         }, 2000);
+  //         }
+  //         playNext(0)
+  //         start = Date.now();
+  //         clearTimeout(timerId);
+  //         timerId = setTimeout(callback, fixedtime);
+  //     }
+
+  //     this.getSessionTime = function(){
+  //       total += Date.now() - lastStart; // update time spent in training
+  //       return total;
+  //     }
+
+  //     this.checkIota = function(){
+  //       if (Date.now() - start > 45000){  // 45 second iota
+  //         return true;
+  //       }
+  //       else{
+  //         console.log("iota not reached");
+  //         return false;
+  //       }
+  //     }
+
+  //     this.stop = function(){
+  //       clearTimeout(timerId);
+  //     }
+
+  //     this.resume();
+  // };
+
+  var SimpleTimer = function(callback) {
+    var timerId, start;
+    var longTime = 420000; // 7 minutes
+    var shortTime = 75000; // 1 minute 15 seconds
+    var iota = 240000; // 4 minutes
+    var lastStart = Date.now();
+    
+    this.start = function(){
+      if (timerId){
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      start = Date.now();
+      timerId = setTimeout(callback, longTime);
+      console.log("started timer");
+    };
+
+    this.stop = function(){
+      console.log("stopping timer")
+      if (timerId){
+        clearTimeout(timerId);
+        timerId = null;
+      }
+    }
+  
+    this.next = function() {
+      playNext(1)
+      start = Date.now();
+      clearTimeout(timerId);
+      console.log("starting short timer");
+      timerId = setTimeout(callback, shortTime);
+    };
+
+    this.switch = function (){
+      if (!this.checkIota()){
+        io.sockets.to("browser").emit('nosignal', null);
+        setTimeout(function(){  // wait 2 seconds before stopping
+          // log iota not reached to file
+          let str = "Timestamp: "+ Date.now()+ "; Action: stop; Iota not reached\n";
+          fs.appendFileSync(logfile, str);
+          stop(true);
+      }, 2000);
+      }
+      playNext(0)
+      start = Date.now();
+      console.log("clearing timer", timerId);
+      clearTimeout(timerId);
+      timerId = setTimeout(callback, longTime);
+  }
+
+  
+    this.checkIota = function(){
+      if (Date.now() - start > iota){  // 4.5 minute iota
+        return true;
+      }
+      else{
+        console.log("iota not reached");
+        return false;
+      }
+    }
+
+    this.stopWithIota = function(){
+      clearTimeout(timerId);
+      if (!this.checkIota()){
+        // log iota not reached to file
+        let str = "Timestamp: "+ Date.now()+ "; Action: stop; Iota not reached\n";
+        fs.appendFileSync(logfile, str);
+        return false;
+      }
+      else{
+        return true;
+      }
+    }  
+  
+    this.getSessionTime = function(){
+      total += Date.now() - lastStart; // update time spent in training
+      return total;
+    }
+    console.log("starting from within");
+    this.start();
+  };
+});
+
 server.listen(3000, () => {
-    //console.log('listening on *:3000');
+    console.log('server is running at http://localhost:3000');
 });
 
 module.exports = server;
+
+
+// function getHeartRateAtSignUp(){
+//  console.log("getHeartRateAtSignUp")
+//   let total = 0;
+//   let average = 0;
+//   io.on('connection', async(socket) => {
+//     console.log("getHeartRateAtSignUp_connect")
+//     currentSocket = socket;
+//     currentSocket.on('getBPM', () => {
+//       router.post('/test', async (ctx, next) =>{
+//         if (bpmUsedForAlg){ // using /test route for soundscapes page
+//           if (inited) {
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Heartrate"){
+//                   console.log(body.heartrate);
+//                   seleniumtest.addBPM(body.heartrate);
+//                   ctx.status = 200;
+//                 }
+//               }
+//               console.log(ctx.request.body);
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+//         }
+//         else{ // using /test route for signup
+//           if (!bpm_connected){
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Connect"){
+//                   if (body.id == user){
+//                     ctx.status = 200;
+//                     bpm_connected = true;
+//                     currentSocket.emit('updateProgress', null);
+//                   }
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+
+//           else{
+//             var hr = null;
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command = "Heartrate"){
+//                   hr = body.heartrate;
+//                   console.log(hr);
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+          
+//             if (hr){
+//               currentSocket.emit('updateProgress',null);
+//               total += 1;
+//               if (total > 2){ // after 2 minutes start averaging hr
+//                 average+=hr;
+//               }
+//               if (total==5){ // after 5 minutes return average
+//                 restBPM = average/3;
+//                 let str = "resting heart rate: " + restBPM + "\n";
+//                 var filename = "./log/" + user + ".log";
+//                 fs.appendFileSync(filename, str);
+//                 db.addUser(user, restBPM);
+//               }
+//             }
+//           }
+//         }
+//       })
+//     })
+//   })
+// }
+
+
+// function ioconnection(){
+//   io.on('connection', async (socket) => {
+//     //console.log("socket connect");
+//     currentSocket = socket;
+//       router.post('/test', async (ctx, next) =>{
+//         if (!bpm_connected && inited){
+//           try{
+//             let body = JSON.parse(ctx.request.body);
+//             if (body.hasOwnProperty("command")){
+//               if (body.command == "Connect"){
+//                 if (body.id == user){
+//                   let str = "Timestamp: "+Date.now()+"; connected\n";
+//                   fs.appendFileSync(logfile, str);
+//                   socket.emit("init123", "world");
+//                   bpm_connected = true;
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//           }
+//           catch(e){
+//             console.log(e);
+//           }
+//         }
+//         else{ // watch already connected
+//           if (inited && bpm_connected) {
+//             try{
+//               let body = JSON.parse(ctx.request.body);
+//               if (body.hasOwnProperty("command")){
+//                 if (body.command == "Heartrate"){
+//                   console.log(body.heartrate);
+//                   seleniumtest.addBPM(body.heartrate);
+//                   ctx.status = 200;
+//                 }
+//               }
+//             }
+//             catch(e){
+//               console.log(e);
+//             }
+//           }
+//         }
+//       });
+//       socket.emit("isAdmin", isAdmin);
+//       socket.emit("setMode", mode); 
+//   }); 
+// }

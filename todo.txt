@@ -1,0 +1,6 @@
+- remove title in log
+- extra todo from user guide
+6hrs feb 14, meeting 15, plus stuff 2 weeks prior, feb 22 12-
+
+brew update
+brew upgrade chromedriver

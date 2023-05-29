@@ -10,17 +10,17 @@
   var bpm;
   var volume;
   var currentMode;
-  var timeout;
+  var skiptimeout;
+  var setprevtimeout;
 
 
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
-    document.getElementById("h").innerHTML = "loaded";
-    document.getElementById("alert").style.visibility = "hidden";
     document.getElementById("stop").disabled = false;
     socket.emit("restbpm", bpm);
     // start playing right when loaded
     socket.emit("startsocket", null);
+    setprevtimeout = setTimeout(setPrevBpm, 90000); // timeout after 1.5 minute (900000 ms) of first sound to set previous bpm in alg
     nextbutton.disabled = false;
     pausebutton.classList.toggle("playDisabled");
     pausebutton.classList.toggle("active");
@@ -43,7 +43,6 @@
 
   socket.on('reload', function(msg) {
     pausebutton.classList.toggle("playDisabled");
-    console.log(msg)
     if (msg) {
       first = false;
       document.getElementById("h").innerHTML = currentMode;
@@ -85,6 +84,18 @@
     setTimeout(hideAlert, 5000);
   })
 
+  socket.on('nosignal', function(msg){ 
+    title.innerHTML = "Signal from watch is lost. Ending Session.";
+    alert.innerHTML = "No signal detected! Please contact Martha!";
+    alert.style.visibility = "visible";
+    nextbutton.disabled = true;
+    stopbutton.disabled = true;
+  });
+
+  socket.on('loaded', function(msg){
+    document.getElementById("h").innerHTML = "Loaded, you can now connect with the app";
+  })
+
   function hideAlert(){
     document.getElementById("alert").style.visibility = "hidden";
   }
@@ -111,6 +122,9 @@
 
   nextbutton.addEventListener('click', function() {
     socket.emit("nextsocket", null);
+    if (setprevtimeout){
+      clearTimeout(setprevtimeout);
+    }
   })
 
 
@@ -124,11 +138,11 @@
     socket.emit("pausesocket", null);
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
-      timeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
+      skiptimeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
     }
     else{
       title.innerHTML = currentMode;
-      clearTimeout(timeout);
+      clearTimeout(skiptimeout);
     }
   })
 
@@ -138,16 +152,21 @@
     socket.close();
   }
 
-  function formbtn(){
-    var x = document.getElementById("form");
-    
-    var i;
-    for (i = 0; i < x.length ;i++) {
-      bpm = x.elements[i].value;
-    }
-    document.getElementById("beforestart").style.display = "none";
-    document.getElementById("started").style.display = "block";
+  function setPrevBpm(){
+    socket.emit("setprevious");
   }
+
+  // ????
+  // function formbtn(){
+  //   var x = document.getElementById("form");
+    
+  //   var i;
+  //   for (i = 0; i < x.length ;i++) {
+  //     bpm = x.elements[i].value;
+  //   }
+  //   document.getElementById("beforestart").style.display = "none";
+  //   document.getElementById("started").style.display = "block";
+  // }
 
 
 document.getElementById("volume-control").addEventListener("change", function(){
@@ -155,7 +174,6 @@ document.getElementById("volume-control").addEventListener("change", function(){
   socket.emit("changeVolume", slideAmount-volume);
   volume = slideAmount;
 });
-
 
 document.getElementById("epsilon_range").addEventListener("change", function() {
   var epsilon_range = document.getElementById("epsilon_range").value;

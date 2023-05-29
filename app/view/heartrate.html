@@ -1,0 +1,30 @@
+<script src="js/jquery.min.js"></script>
+<script src="js/socket.io.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script>
+    const socket = io("http://localhost:3000/");
+</script>
+
+<div class="container">
+  <div class="vertical-center center row align-items-center bg_gray" id="beforestart">
+    <div class="col-1"></div>
+    <div class="col-xl-10">
+        <div class="center">
+        <h5>Resting heart rate</h5>
+            <label for="hrbutton" class="center">Once you are ready click start, then connect your app. We are measuring your resting heart rate. Try to relax for a while as this process takes about 5 minutes.</label>
+        <div class="center" id="status" style="display: none;">
+            <h4 id="status_text">Progress: Not connected </h4>
+        </div>
+        <div class="center" id="start_button_div" style="display: block;">
+            <button class="btn btn-primary btn-block" id="start_button" type="button" > Start </button>
+        </div>
+        <div class="center" id="finish_button_div" style="display: none;">
+            <button class="btn btn-primary btn-block" id="finish_button" type="button" onclick="location.href='/'"> Finish </button>
+        </div>
+        </div> 
+    </div>
+    <div class="col-1"></div>
+  </div>
+</div>
+
+<script src="js/heartrate.js"></script>

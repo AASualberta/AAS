@@ -7,6 +7,7 @@ const Algorithm = require('./alg.js');
 var options = new chrome.Options();
 options.headless();
 options.addArguments("--autoplay-policy=no-user-gesture-required");
+options.addArguments("--no-sandbox")
 options.windowSize({height:5, width:5, x:0, y:0});
 var driver = new webdriver.Builder()
     .forBrowser('chrome')
@@ -33,7 +34,7 @@ class SeleniumTest{
         this.timeouts = null;
         this.first = 0;
 //        this.num = 3; // number of sounds in personalized sound library.
-        this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
+        // this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
         this.msg = null;
         this.select_msg = null;
         this.bpms = [];
@@ -83,6 +84,10 @@ async changeAlpha(alpha) {
 
 async changeEpsilon(epsilon) {
     alg.setEpsilon(epsilon);
+}
+
+async setPrevBPM(bpm){
+    alg.setPrevBPM(this.avg_bpm);
 }
 
 async changeVolume(change_num){
@@ -168,8 +173,8 @@ async startFirstSound(){
         el.sendKeys(Key.chord("p")).then((a)=>{
             //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
-        return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
-            return await ele.getAttribute("textContent").then((e)=>{
+        return await driver.findElement(By.css('div.mainTitle')).then(async (ele)=>{
+            return await ele.getAttribute("titleName").then((e)=>{
                 return e;
             });
         });
@@ -177,8 +182,8 @@ async startFirstSound(){
     this.select_msg = alg.getMessage();
     //console.log(this.select_msg)
     return msg.then((e)=>{
-        let name = e.trim();
-        return [name,"; soundscape: "+ name + "; value index: "+ ind.toString()+ "; heart_rate: " + self.avg_bpm.toString() + this.select_msg]
+        let name = e;
+        return [name, "; value index: "+ ind.toString() + this.select_msg]
     })
 }
 
@@ -205,8 +210,8 @@ async playNext(mode, pressed){
                 await el.sendKeys(Key.chord("p")).then((a)=>{
                     //console.log("unmute...");
                 });
-                return await driver.findElement(By.css('div.bigTitle')).then(async function (el){
-                   return await el.getAttribute("textContent").then((value)=>{
+                return await driver.findElement(By.css('div.mainTitle')).then(async function (el){
+                   return await el.getAttribute("titleName").then((value)=>{
                         //console.log("Switched to "+value);
                         //el.getDriver().getWindowHandle().then((va)=>{console.log(va);});
                         return value;
@@ -217,8 +222,8 @@ async playNext(mode, pressed){
         });
     });
     return msg.then((e)=>{
-        let name = e[0].trim();
-        return [name,"; soundscape: "+ name + "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+        let name = e[0];
+        return [name, "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }
 
