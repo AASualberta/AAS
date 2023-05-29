@@ -15,18 +15,23 @@ socket.on('updateProgress', () => {
 	else{
 		str = "Complete!"
         document.getElementById("finish_button_div").style.display = "block";
-		socket.close();
 	}
 	statustext.textContent = str;
 	progress+=1;
 })
 
 socket.on('nosignal', () => {
+	console.log("No signal from watch! Please contact Martha! \n Ending Session.");
 	statustext.textContent = "No signal from watch! Please contact Martha! \n Ending Session.";
+	finishbutton.disabled = true;
 });
 
 startbutton.addEventListener("click", function(){
 	document.getElementById("start_button_div").style.display = "none";
 	document.getElementById("status").style.display = "block";
 	socket.emit('getBPM', null);
+});
+
+finishbutton.addEventListener("click", function(){
+	socket.close();
 });

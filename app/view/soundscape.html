@@ -3,6 +3,7 @@
 <script src="js/bootstrap.min.js"></script>
 <script>
   const socket = io("http://localhost:3000/");
+  socket.emit("join", "soundscape");
 </script>
 
 <div class="container">
@@ -39,7 +40,7 @@
         </div>
         <div class="col-4">
           
-          <input id="volume-control" type="range" min="0" max="100" step="3" value="50" disabled>
+          <input id="volume-control" type="range" min="0" max="100" step="3" value="50">
           
         </div>
         <div class="col-4">
