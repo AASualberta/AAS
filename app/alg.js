@@ -62,7 +62,7 @@ class Algorithm{
 		this.num = num; // num of sounds
 		this.values = []; // action values
 		this.policy = []; // probability of choosing an action
-		this.epsilon = 2/3;
+		this.epsilon = 1/3;
 		this.greedy_prob = 1 - this.epsilon + this.epsilon / this.num;
 		this.nongreedy_prob = this.epsilon / this.num;
 		// equal probability for initialization
@@ -246,6 +246,9 @@ class Algorithm{
 		var bpm = d; 
 		var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
 		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
+		if (rate_dif == 0) {
+			rew = Math.min(0, this.upperbound - bpm);
+		}
 		var rew = Math.max(rate_dif, rest_dif);
 		this.previous_bpm = bpm;
 		if (pressed) {

@@ -185,7 +185,12 @@ router.get('/heartrate', async(ctx, next) => {
 
 router.get('/', async (ctx, next) => {
   if (!user || !inited) {
-    await ctx.render('index');
+    if (db.getFirstUserHR() > 0){
+      await ctx.render('start');
+    }
+    else{
+      await ctx.render('signup');
+    }
   }
   else {
     ctx.redirect("/soundscape");

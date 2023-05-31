@@ -85,8 +85,8 @@
   })
 
   socket.on('nosignal', function(msg){ 
-    title.innerHTML = "Signal from watch is lost. Ending Session.";
-    alert.innerHTML = "No signal detected! Please contact Martha!";
+    title.innerHTML = "Signal lost. Ending Session.";
+    alert.innerHTML = "No heart rate data! Please contact Mariia!";
     alert.style.visibility = "visible";
     nextbutton.disabled = true;
     stopbutton.disabled = true;

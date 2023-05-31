@@ -10,13 +10,11 @@
     <div class="col-1"></div>
     <div class="col-xl-10">
         <div class="center">
-        <h5>Resting heart rate</h5>
-            <label for="hrbutton" class="center">Once you are ready click start, then connect your app. We are measuring your resting heart rate. Try to relax for a while as this process takes about 5 minutes.</label>
-        <div class="center" id="status" style="display: none;">
-            <h4 id="status_text">Progress: Not connected </h4>
-        </div>
-        <div class="center" id="start_button_div" style="display: block;">
-            <button class="btn btn-primary btn-block" id="start_button" type="button" > Start </button>
+        <h5>Measuring resting heart rate</h5>
+            <label for="hrbutton" class="center">Make sure you're sitting comfortably, then connect your app. We are measuring your resting heart rate. Try to relax for a while as <b>this process takes about 5 minutes.</b></label>
+        <div class="center" id="status">
+            <h5 id="status_text"></h5>
+            <img src="img/heart.png" width="100" height="100" style="visibility:hidden" id="heart">
         </div>
         <div class="center" id="finish_button_div" style="display: none;">
             <button class="btn btn-primary btn-block" id="finish_button" type="button" onclick="location.href='/'"> Finish </button>
