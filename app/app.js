@@ -13,6 +13,7 @@ const fs = require('fs');
 const db = require('./db.js')
 
 const Drive = require('./drivelog');
+const { set } = require('mongoose');
 
 const app = module.exports = new Koa();
 const router = koaRouter();
@@ -24,6 +25,7 @@ var hgConnected = false;
 var browserSocket;
 var killOnDisconnect = false;
 var firstHR = true;
+var critHR = false;
 
 var timer;
 var skipList = [];
@@ -317,14 +319,18 @@ io.on('connection', async (socket) => {
               firstHR = false;
               if (timer){
                 console.log("in first hr")
+                total = 0;
                 timer.stop();
-                timer.start();
+                timer.startIota();
               }
             }
             else{ 
               total += 1;
               seleniumtest.addBPM(data.heartrate);
-              if (total == 5) { // switch when total = 5
+              if (total == 5 && !critHR) {
+                stop(true);
+              }
+              else if (critHR){
                 let timeElapsed = timer.getSessionTime();
                 if (timeElapsed + db.findTime(user) > 10800000){
                   mode = 1;
@@ -332,6 +338,7 @@ io.on('connection', async (socket) => {
                   io.sockets.to("browser").emit("setMode", mode);
                 }
                 total = 0;
+                critHR = false;
                 timer.switch();
               }
             }
@@ -620,11 +627,27 @@ io.on('connection', async (socket) => {
 
   var SimpleTimer = function(callback) {
     var timerId, start;
+    var delta = 30000; // 30 seconds
     var longTime = 420000; // 7 minutes
-    var shortTime = 75000; // 1 minute 15 seconds
-    var iota = 240000; // 4 minutes
+    var shortTime = 75000; // 1.25 minutes
+    var iota = 285000; // 4.75 minutes
     var lastStart = Date.now();
     
+    this.startIota = function(){
+      if (timerId){
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      start = Date.now();
+      timerId = setTimeout(function(){
+        critHR = true;
+        timerId = setTimeout(function(){ 
+          callbackfn();
+        }, delta);
+      }, iota);
+      console.log("started timer");
+    };
+
     this.start = function(){
       if (timerId){
         clearTimeout(timerId);
@@ -632,8 +655,7 @@ io.on('connection', async (socket) => {
       }
       start = Date.now();
       timerId = setTimeout(callback, longTime);
-      console.log("started timer");
-    };
+    }
 
     this.stop = function(){
       console.log("stopping timer")
@@ -652,32 +674,17 @@ io.on('connection', async (socket) => {
     };
 
     this.switch = function (){
-      if (!this.checkIota()){
-        io.sockets.to("browser").emit('nosignal', null);
-        setTimeout(function(){  // wait 2 seconds before stopping
-          // log iota not reached to file
-          let str = "Timestamp: "+ Date.now()+ "; Action: stop; Iota not reached\n";
-          fs.appendFileSync(logfile, str);
-          stop(true);
-      }, 2000);
-      }
       playNext(0)
       start = Date.now();
       console.log("clearing timer", timerId);
       clearTimeout(timerId);
-      timerId = setTimeout(callback, longTime);
+      timerId = setTimeout(function(){
+        critHR = true;
+        timerId = setTimeout(function(){ 
+          callbackfn();
+        }, delta);
+      }, iota);
   }
-
-  
-    this.checkIota = function(){
-      if (Date.now() - start > iota){  // 4.5 minute iota
-        return true;
-      }
-      else{
-        console.log("iota not reached");
-        return false;
-      }
-    }
 
     this.stopWithIota = function(){
       clearTimeout(timerId);

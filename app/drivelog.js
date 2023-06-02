@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const readline = require('readline');
 const {google, GoogleApis} = require('googleapis');
 const directory = '1LWOoQZ5d6cGFHcP5IQDF2LMlp4NWupTg'; // id of directory you want the files uploaded in, must be shared with service account
@@ -10,6 +11,15 @@ const auth = new google.auth.GoogleAuth({
     scopes: SCOPES
 })
 const driveService = google.drive({version:"v3", auth});
+
+function encryptString (plaintext) {
+    const publicKey = fs.readFileSync("./public_key.pem", "utf8");
+  
+    // publicEncrypt() method with its parameters
+    const encrypted = crypto.publicEncrypt(
+         publicKey, Buffer.from(plaintext));
+    return encrypted.toString("base64");
+}
 
 class Drive {
     constructor(username){
@@ -23,10 +33,12 @@ class Drive {
             'name': this.filename,
             'parents': [directory]
         };
-    
+        
+        var content = fs.createReadStream(this.localfilename)
+        content = encryptString(content)
         let media = {
             mimeType: 'text/plain',
-            body: fs.createReadStream(this.localfilename)
+            body: content
         };
     
         let response = await driveService.files.create({
@@ -50,10 +62,11 @@ class Drive {
     }
     
     async updateFile(fileId){
-    
+        var content = fs.createReadStream(this.localfilename)
+        content = encryptString(content)
         let media = {
             mimeType: 'text/plain',
-            body: fs.createReadStream(this.localfilename)
+            body: content
         };
     
         let response = await driveService.files.update({
