@@ -1,0 +1,24 @@
+<script src="js/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+<div class="container">
+    <div class="vertical-center center row align-items-center bg_gray" id="signin">
+      <div class="col-1"></div>
+      <div class="col-xl-10">
+        <div class="center ">
+            <h3>Start a Listening Session</h3>
+          <form id="form" class="center" action="/signin" method="post">
+              <label for="username" class="center">User Name:</label>
+              <input required type="text" id="username" name="username" style="width: 100%" ><br><br>
+              <label for="mood" class="center">Before starting, please give a short description of what you did in the last hour and how you feel:</label>
+              <textarea required type="textarea" id="mood" name="mood" placeholder="Write here..." style="width: 100%"></textarea>
+              <br><br>
+          <div class="center" >
+            <input id="formbutton" type="submit" class="btn btn-primary btn-block" value="Start Session"> 
+          </div>
+          </form>
+        </div> 
+      </div>
+      <div class="col-1"></div>
+    </div>
+</div>

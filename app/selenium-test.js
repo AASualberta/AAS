@@ -28,18 +28,16 @@ const allSounds = [['White Noise & Co.', 'https://mynoise.net/NoiseMachines/whit
                 ['Aircraft Cabin Noise', 'https://mynoise.net/NoiseMachines/cabinNoiseGenerator.php'],
                 ['Tierra del Fuego', 'https://mynoise.net/NoiseMachines/landOfFireNaturalSoundscapeGenerator.php']];
 const alg = new Algorithm(num);
+
 class SeleniumTest{
 
     constructor(){
         this.timeouts = null;
         this.first = 0;
-//        this.num = 3; // number of sounds in personalized sound library.
-        // this.timer = 300000; // Each sound is played up to 5 (300000ms) minutes.
         this.msg = null;
         this.select_msg = null;
         this.bpms = [];
         this.avg_bpm = 0;
-        //await this.init();
         this.logfile = null;
 
     }
@@ -54,19 +52,6 @@ close(fromTimeout){
     else{
         driver.quit();
     }
-}
-
-async getVolume(){
-    var msg = driver.findElement(By.css('body')).then(async (el)=>{
-        return await driver.findElement(By.css('div.ui-slider-range-min')).then(async (ele)=>{
-            return await ele.getAttribute("style").then((e)=>{
-                //console.log(e.split(":"))
-                return parseFloat(e.split(":")[1]);
-            });
-        });
-    }).catch((e) => { console.error(e.message) });
-    
-    return msg;
 }
 
 async setMode(mode){
@@ -90,24 +75,24 @@ async setPrevBPM(bpm){
     alg.setPrevBPM(this.avg_bpm);
 }
 
-async changeVolume(change_num){
-    var self = this;
-    var key;
-    if (change_num < 0){
-        key = "j";
-    }
-    else {
-        key = "k";
-    }
-    change_num = Math.abs(change_num)
-    for (var i = change_num - 1; i >= 0; i--) {
-        await driver.findElement(By.css('body')).then(async (el)=>{
-            el.sendKeys(Key.chord(key)).then((a)=>{
-                //console.log("change volume value...");
-            }).catch((e) => { console.error(e.message) });
-        }).catch((e) => { console.error(e.message) });
-    }
-}
+// async changeVolume(change_num){
+//     var self = this;
+//     var key;
+//     if (change_num < 0){
+//         key = "j";
+//     }
+//     else {
+//         key = "k";
+//     }
+//     change_num = Math.abs(change_num)
+//     for (var i = change_num - 1; i >= 0; i--) {
+//         await driver.findElement(By.css('body')).then(async (el)=>{
+//             el.sendKeys(Key.chord(key)).then((a)=>{
+//                 //console.log("change volume value...");
+//             }).catch((e) => { console.error(e.message) });
+//         }).catch((e) => { console.error(e.message) });
+//     }
+// }
 
 async pause() {
     var self = this;
@@ -115,11 +100,6 @@ async pause() {
         el.sendKeys(Key.chord("p")).then((a)=>{
             //console.log("unmute...");
         }).catch((e) => { console.error(e.message) });
-        return await driver.findElement(By.css('div.bigTitle')).then(async (ele)=>{
-            return await ele.getText().then((e)=>{
-                return e;
-            });
-        });
     }).catch((e) => { console.error(e.message) });
 }
 
@@ -183,7 +163,8 @@ async startFirstSound(){
     //console.log(this.select_msg)
     return msg.then((e)=>{
         let name = e;
-        return [name, "; value index: "+ ind.toString() + this.select_msg]
+        let soundName = allSounds[Math.abs(ind-9)][0];
+        return [name, "; sound: "+ soundName + this.select_msg]
     })
 }
 
@@ -223,7 +204,8 @@ async playNext(mode, pressed){
     });
     return msg.then((e)=>{
         let name = e[0];
-        return [name, "; value index: "+e[1]+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
+        let soundName = allSounds[Math.abs(e[1]-9)][0];
+        return [name, "; sound: "+soundName+ "; heart_rate: " + self.avg_bpm.toString() + self.select_msg]
     })
 }
 
@@ -268,22 +250,6 @@ async init(){
     return true;
 }
 
-getLibrary(allSounds){
-    /*
-        Select a subset of sound categories.
-    */
-    let ret = [];
-    let count = 0;
-    for (var i = 0; i < allSounds.length; i++) {
-        // Sounds are randomly selected.
-        if (Math.random() > 0.5 && count < num) {
-            ret.push(allSounds[i]);
-            count += 1;
-        }
-    }
-    return ret;
-}
-
 async openTabs(lib){
     /*
         1. Open all tabs.
@@ -302,7 +268,7 @@ async openTabs(lib){
         await driver.executeScript("window.open('"+lib[i][1]+"', '"+i+"');", );
     }
     var windows = await driver.getAllWindowHandles();
-    //console.log(windows);
+    console.log(windows);
     for (var i = 0; i < windows.length-1; i++) {
         await driver.switchTo().window(windows[i+1]);
         let processed = false;
@@ -313,7 +279,6 @@ async openTabs(lib){
             return driver.findElement(By.id('mute')).then((elem1)=>{
                 return elem1.getAttribute("class").then(async function(classes){
                     if (classes.indexOf('active') < 0 && classes.indexOf('disabled') < 0 && !processed) {
-                        
                         return elem1;
                     }
                 });
@@ -330,6 +295,46 @@ async openTabs(lib){
             }*/
             ele.getDriver().getWindowHandle().then((va)=>{});
             await driver.findElement(By.css('body')).then(async function(bd){
+                await driver.getCurrentUrl().then(async (url)=> {
+                    url = url.toString();
+                    switch (url) {
+                        case "https://mynoise.net/NoiseMachines/whiteNoiseGenerator.php":
+                            for (var i = 0; i < 5; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case 'https://mynoise.net/NoiseMachines/whiteRainNoiseGenerator.php':
+                            for (var i = 0; i < 3; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case 'https://mynoise.net/NoiseMachines/catPurrNoiseGenerator.php':
+                            for (var i = 0; i < 3; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case "https://mynoise.net/NoiseMachines/acousticPianoSoundscapeGenerator.php":
+                            for (var i = 0; i < 2; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case 'https://mynoise.net/NoiseMachines/rainforestNoiseGenerator.php':
+                            for (var i = 0; i < 5; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case 'https://mynoise.net/NoiseMachines/primevalEuropeanForestSoundscapeGenerator.php':
+                            for (var i = 0; i < 2; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                        case 'https://mynoise.net/NoiseMachines/landOfFireNaturalSoundscapeGenerator.php':
+                            for (var i = 0; i < 2; i++) {
+                                await bd.sendKeys(Key.chord("j"))
+                            }
+                            break;
+                    }
+                });
                 //driver.getTitle().then((e)=>console.log(e))
                 await bd.sendKeys(Key.chord("p")).then((a)=>{
                     //let str = "loading..."+((i+1)/num).toFixed(3)*100+"%.\n";

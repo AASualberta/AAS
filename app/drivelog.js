@@ -12,12 +12,17 @@ const auth = new google.auth.GoogleAuth({
 })
 const driveService = google.drive({version:"v3", auth});
 
+const publicKey = fs.readFileSync("public_key.pem", { encoding: 'utf8', flag: 'r' });
+
 function encryptString (plaintext) {
-    const publicKey = fs.readFileSync("./public_key.pem", "utf8");
-  
     // publicEncrypt() method with its parameters
     const encrypted = crypto.publicEncrypt(
-         publicKey, Buffer.from(plaintext));
+        {
+            key: publicKey,
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+            oaepHash: "sha256",
+        },
+        Buffer.from(plaintext));
     return encrypted.toString("base64");
 }
 
@@ -34,8 +39,17 @@ class Drive {
             'parents': [directory]
         };
         
-        var content = fs.createReadStream(this.localfilename)
-        content = encryptString(content)
+        var content = fs.readFileSync(this.localfilename)
+        content = content.toString()
+        var buffer = "";
+        content.split(/\r?\n/).forEach(line =>  {
+            if (line != "" && line != "\n") {
+                let encryptedData = encryptString(line);
+                buffer += encryptedData + "\n";
+            }
+        });
+        content = buffer;
+        
         let media = {
             mimeType: 'text/plain',
             body: content
@@ -62,8 +76,17 @@ class Drive {
     }
     
     async updateFile(fileId){
-        var content = fs.createReadStream(this.localfilename)
-        content = encryptString(content)
+        var content = fs.readFileSync(this.localfilename)
+        content = content.toString()
+        var buffer = "";
+        content.split(/\r?\n/).forEach(line =>  {
+            if (line != "" && line != "\n") {
+                let encryptedData = encryptString(line);
+                buffer += encryptedData + "\n";
+            }
+        });
+        content = buffer;
+
         let media = {
             mimeType: 'text/plain',
             body: content
