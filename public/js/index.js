@@ -25,7 +25,7 @@
     pausebutton.classList.toggle("playDisabled");
     pausebutton.classList.toggle("active");
     document.getElementById("pause").disabled = false;
-    document.getElementById("volume-control").disabled = false;
+    // document.getElementById("volume-control").disabled = false;
   });
 
   socket.on('setMode', function(msg){
@@ -53,7 +53,7 @@
     }
     document.getElementById("stop").disabled = false;
     document.getElementById("pause").disabled = false;
-    document.getElementById("volume-control").disabled = false;
+    // document.getElementById("volume-control").disabled = false;
     if (!first) {
       nextbutton.disabled = false;
     }
@@ -85,8 +85,8 @@
   })
 
   socket.on('nosignal', function(msg){ 
-    title.innerHTML = "Signal from watch is lost. Ending Session.";
-    alert.innerHTML = "No signal detected! Please contact Martha!";
+    title.innerHTML = "Signal lost. Ending Session.";
+    alert.innerHTML = "No heart rate data! Please contact Mariia!";
     alert.style.visibility = "visible";
     nextbutton.disabled = true;
     stopbutton.disabled = true;
@@ -139,10 +139,14 @@
     if (title.innerHTML == currentMode) {
       title.innerHTML = "Paused";
       skiptimeout = setTimeout(timeoutFunction, 900000); // timeout after 15 minutes (900000 ms) terminates session
+      stopbutton.disabled = true;
+      nextbutton.disabled = true;
     }
     else{
       title.innerHTML = currentMode;
       clearTimeout(skiptimeout);
+      stopbutton.disabled = false;
+      nextbutton.disabled = false;
     }
   })
 
@@ -169,11 +173,11 @@
   // }
 
 
-document.getElementById("volume-control").addEventListener("change", function(){
-  var slideAmount = document.getElementById("volume-control").value;
-  socket.emit("changeVolume", slideAmount-volume);
-  volume = slideAmount;
-});
+// document.getElementById("volume-control").addEventListener("change", function(){
+//   var slideAmount = document.getElementById("volume-control").value;
+//   socket.emit("changeVolume", slideAmount-volume);
+//   volume = slideAmount;
+// });
 
 document.getElementById("epsilon_range").addEventListener("change", function() {
   var epsilon_range = document.getElementById("epsilon_range").value;
@@ -188,7 +192,7 @@ document.getElementById("alpha_range").addEventListener("change", function() {
 });
 
 
-socket.on("volume",function(msg){
-  volume = parseFloat(msg);
-  document.getElementById("volume-control").value = volume;
-})
+// socket.on("volume",function(msg){
+//   volume = parseFloat(msg);
+//   document.getElementById("volume-control").value = volume;
+// })

@@ -61,6 +61,12 @@ class Database {
 		.assign({driveid: id})
 		.write()
 	}
+
+	getFirstUserHR(){
+		var re = this.db.get('users[0].restbpm').value();
+		if (re) {return re;}
+		else return false;
+	}
 }
 
 var DB = new Database()

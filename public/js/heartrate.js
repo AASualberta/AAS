@@ -1,16 +1,17 @@
-const startbutton = document.getElementById("start_button");
 const finishbutton = document.getElementById("finish_button");
 const statustext = document.getElementById("status_text");
+const heart = document.getElementById("heart");
 
 let progress = 0;
 
 socket.on('updateProgress', () => {
-	let str;
-	if (progress == 0){
-		str = "Connected";
-	}
-	else if (progress < 5){
-		str = "Progress: "+progress*20+"%";
+	let str = "Measuring...";
+	if (progress < 5){
+		document.getElementById("status").style.display = "block";
+		heart.style.visibility = "visible";
+		setTimeout(function(){
+			heart.style.visibility = "hidden";
+		}, 1000);	
 	}
 	else{
 		str = "Complete!"
@@ -21,15 +22,9 @@ socket.on('updateProgress', () => {
 })
 
 socket.on('nosignal', () => {
-	console.log("No signal from watch! Please contact Martha! \n Ending Session.");
-	statustext.textContent = "No signal from watch! Please contact Martha! \n Ending Session.";
+	console.log("No signal from watch! Please contact Mariia! \n Ending Session.");
+	statustext.textContent = "No signal from watch! Please contact Mariia! \n Ending Session.";
 	finishbutton.disabled = true;
-});
-
-startbutton.addEventListener("click", function(){
-	document.getElementById("start_button_div").style.display = "none";
-	document.getElementById("status").style.display = "block";
-	socket.emit('getBPM', null);
 });
 
 finishbutton.addEventListener("click", function(){

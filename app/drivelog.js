@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const readline = require('readline');
 const {google, GoogleApis} = require('googleapis');
 const directory = '1LWOoQZ5d6cGFHcP5IQDF2LMlp4NWupTg'; // id of directory you want the files uploaded in, must be shared with service account
@@ -10,6 +11,20 @@ const auth = new google.auth.GoogleAuth({
     scopes: SCOPES
 })
 const driveService = google.drive({version:"v3", auth});
+
+const publicKey = fs.readFileSync("public_key.pem", { encoding: 'utf8', flag: 'r' });
+
+function encryptString (plaintext) {
+    // publicEncrypt() method with its parameters
+    const encrypted = crypto.publicEncrypt(
+        {
+            key: publicKey,
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+            oaepHash: "sha256",
+        },
+        Buffer.from(plaintext));
+    return encrypted.toString("base64");
+}
 
 class Drive {
     constructor(username){
@@ -23,10 +38,21 @@ class Drive {
             'name': this.filename,
             'parents': [directory]
         };
-    
+        
+        var content = fs.readFileSync(this.localfilename)
+        content = content.toString()
+        var buffer = "";
+        content.split(/\r?\n/).forEach(line =>  {
+            if (line != "" && line != "\n") {
+                let encryptedData = encryptString(line);
+                buffer += encryptedData + "\n";
+            }
+        });
+        content = buffer;
+        
         let media = {
             mimeType: 'text/plain',
-            body: fs.createReadStream(this.localfilename)
+            body: content
         };
     
         let response = await driveService.files.create({
@@ -50,10 +76,20 @@ class Drive {
     }
     
     async updateFile(fileId){
-    
+        var content = fs.readFileSync(this.localfilename)
+        content = content.toString()
+        var buffer = "";
+        content.split(/\r?\n/).forEach(line =>  {
+            if (line != "" && line != "\n") {
+                let encryptedData = encryptString(line);
+                buffer += encryptedData + "\n";
+            }
+        });
+        content = buffer;
+
         let media = {
             mimeType: 'text/plain',
-            body: fs.createReadStream(this.localfilename)
+            body: content
         };
     
         let response = await driveService.files.update({

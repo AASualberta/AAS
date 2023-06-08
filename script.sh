@@ -25,3 +25,5 @@ if which node > /dev/null
 npm install
 npm install -g chromedriver # only thing i need in docker version
 
+chmod u+x start.sh
+
