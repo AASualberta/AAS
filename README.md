@@ -1,6 +1,8 @@
 # AAS
 
 ## Program Setup
+MAKE SURE THE PULSESENSOR IS CONNECTED AND Getting_BPM_to_Monitor.ino IS UPLOADED TO THE ARDUINO.
+
 The program is able to run offline when it is initialized successfully.
 ### For Mac users:
 
