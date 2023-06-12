@@ -22,25 +22,29 @@ const server = http.createServer(app.callback());
 var io = require('socket.io')(server);
 var browserConnected = false;
 var hgConnected = false;
-var browserSocket;
 var killOnDisconnect = false;
 var firstHR = false;
 var critHR = false;
 var paused = false;
+var inited = false;
+var bpm_connected = false;
 
 var timer;
 var skipList = [];
 
-var bpm_connected = false;
+
 var mode = 0; // default is training mode
 var pause_num = 0;
-var inited = false;
+var total = 0;
+var average = 0;
+
 
 var drivelog;
 var logfile;
 var user = null;
 var isAdmin = false;
 var restBPM;
+var browserSocket;
 
 var soundscapes_listen = false;
 var signup_listen = false;
@@ -167,8 +171,8 @@ router.get('/end', async(ctx, next) => {
 router.post('/signup', async(ctx, next) => {
   // add a new user to database
   user = ctx.request.body['username'];
+  console.log('added user: ' + user);
   logfile = db.addUser(user, 0);
-  logSurvey(ctx, logfile);
   ctx.response.status = 307;
   ctx.redirect("/heartrate");
 })
@@ -176,12 +180,9 @@ router.post('/signup', async(ctx, next) => {
 router.post('/heartrate', async(ctx, next) => {
   signup_listen = true;
   await ctx.render('heartrate');
-  //getHeartRateAtSignUp();
-  console.log(ctx.request.body);
 })
 
 router.get('/heartrate', async(ctx, next) => {
-  console.log("in get h");
   if (user) {
     signup_listen = true;
     await ctx.render('heartrate');
@@ -215,29 +216,6 @@ async function initialize(){
         browserSocket.emit("init123", "world");
       }
     })
-}
-
-async function logSurvey(ctx, logfile){
-  let answers = "\nSurvey Answers:\n";
-  if (ctx.request.body['age'] == "custom"){
-    answers += ("Age: " + ctx.request.body['agetext'] + "\n");
-  }
-  else{
-    answers += ("Age: " + ctx.request.body['age'] + "\n");
-  }
-  if (ctx.request.body['occupation'] == "custom"){
-    answers += ("Occupation: " + ctx.request.body['occupationtext'] + "\n");
-  }
-  else{
-    answers += ("Occupation: " + ctx.request.body['occupation'] + "\n");
-  }
-  if (ctx.request.body['gender'] == "custom"){
-    answers += ("Gender: " + ctx.request.body['gendertext'] + "\n");
-  }
-  else{
-    answers += ("Gender: " + ctx.request.body['gender'] + "\n");
-  }
-  fs.appendFileSync(logfile, answers);
 }
 
 async function restbpm(arg){
@@ -301,9 +279,6 @@ io.on('connection', async (socket) => {
   }
 
 
-  let total = 0;
-  let average = 0;
-
   socket.on('message', function name(data) {
     if (!paused){
       fs.appendFileSync(logfile, "Timestamp: "+Date.now()+"; received message from watch: "+JSON.stringify(data)+"\n");
@@ -311,21 +286,19 @@ io.on('connection', async (socket) => {
       if (soundscapes_listen){  // handle data on soundscapes page
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
-            //if (data.UserName == user){
-            console.log("connected");
-            let str = "Timestamp: "+Date.now()+"; connected with watch\n";
-            fs.appendFileSync(logfile, str);
-            bpm_connected = true;
-            console.log("hg init123");
-            io.sockets.to("browser").emit("init123", "world");
-            //}
+            if (data.id == user){
+              console.log("connected");
+              let str = "Timestamp: "+Date.now()+"; connected with watch\n";
+              fs.appendFileSync(logfile, str);
+              bpm_connected = true;
+              io.sockets.to("browser").emit("init123", "world");
+            }
           }
           else if (data.command == "Heartrate"){
             if (bpm_connected && inited){
               if (firstHR){ // ignore first hr (bad)
                 firstHR = false;
                 if (timer){
-                  console.log("in first hr")
                   total = 0;
                   timer.stop();
                   timer.startIota();
@@ -359,18 +332,28 @@ io.on('connection', async (socket) => {
         }
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
-            //if (data.UserName == user){
-              console.log("connected");
+            if (data.id == user){
               bpm_connected = true;
               io.sockets.to("browser").emit('updateProgress', null);
               timer.start();
-            //}
+            }
           }
           else if (data.command == "Heartrate"){
-            if (bpm_connected){
-              var hr = data.heartrate
+            if (firstHR){ // ignore first hr
+              firstHR = false;
               io.sockets.to("browser").emit('updateProgress', null);
+              if (timer){
+                total = 0;
+                timer.stop();
+                timer.start();
+              }
+            }
+            else if (bpm_connected){
+              var hr = data.heartrate
               total += 1;
+              if (total < 5){
+                io.sockets.to("browser").emit('updateProgress', null);
+              }
               if (total > 2){ // after 2 minutes start averaging hr (first is ignored)
                 average+=hr;
               }
@@ -379,12 +362,7 @@ io.on('connection', async (socket) => {
                   timer = null;
                   total = 0;
                   restBPM = average/3;
-                  let str = "resting heart rate: " + restBPM + "\n";
-                  fs.appendFileSync(logfile, str);
-                  db.addUser(user, restBPM);
-                  setTimeout(function(){  // wait half a second before stopping
-                    stop(true);
-                  }, 500);
+                  io.sockets.to("browser").emit('updateProgress', restBPM);
                 }
                 else{
                   io.sockets.to("browser").emit('nosignal', null);
@@ -423,7 +401,25 @@ io.on('connection', async (socket) => {
       socket.emit("reload", false);
     }
     else socket.emit("reload", true);
-  }  
+  } 
+  
+  socket.on("finish", async (arg) => {
+    let str = "resting heart rate: " + restBPM + "; Signed up\n";
+    fs.appendFileSync(logfile, str);
+    db.addUser(user, restBPM);
+    setTimeout(function(){  // wait half a second before stopping
+      io.sockets.to("browser").emit('done', null);
+      stop(true);
+    }, 500);
+  });
+
+  socket.on("restart", async (arg) => {
+    let str = "resting heart rate calculated: " + restBPM + "; RESTARTING\n";
+    fs.appendFileSync(logfile, str);
+    total = 0;
+    average = 0;
+    firstHR = true;
+  });
 
   socket.on("startsocket", async (arg) => {
     await seleniumtest.startFirstSound().then((e)=>{
@@ -462,11 +458,6 @@ io.on('connection', async (socket) => {
     killOnDisconnect = false;
     stop(arg);
   });
-  
-  socket.on('restbpm', async (arg)=> {
-    console.log("restbpm", arg);
-    restbpm(arg);
-  })
 
   socket.on("mode", async (arg) => {
     mode = arg;
@@ -644,7 +635,6 @@ io.on('connection', async (socket) => {
           callbackfn();
         }, delta);
       }, iota);
-      console.log("started timer");
     };
 
     this.start = function(){
@@ -657,7 +647,6 @@ io.on('connection', async (socket) => {
     }
 
     this.stop = function(){
-      console.log("stopping timer")
       if (timerId){
         clearTimeout(timerId);
         timerId = null;
@@ -692,14 +681,12 @@ io.on('connection', async (socket) => {
       playNext(1)
       start = Date.now();
       clearTimeout(timerId);
-      console.log("starting short timer");
       timerId = setTimeout(callback, shortTime);
     };
 
     this.switch = function (){
       playNext(0)
       start = Date.now();
-      console.log("clearing timer", timerId);
       clearTimeout(timerId);
       timerId = setTimeout(function(){
         critHR = true;
@@ -736,13 +723,20 @@ io.on('connection', async (socket) => {
       total += Date.now() - lastStart; // update time spent in training
       return total;
     }
-    console.log("starting from within");
   };
 });
 
 server.listen(3000, () => {
     console.log('server is running at http://localhost:3000');
 });
+
+async function openBrowser(){
+  import('open').then(open =>{
+    open.default('http://localhost:3000');
+  });
+}
+
+openBrowser();
 
 module.exports = server;
 

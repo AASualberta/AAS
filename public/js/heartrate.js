@@ -1,10 +1,11 @@
 const finishbutton = document.getElementById("finish_button");
+const restartbutton = document.getElementById("restart_button");
 const statustext = document.getElementById("status_text");
 const heart = document.getElementById("heart");
 
 let progress = 0;
 
-socket.on('updateProgress', () => {
+socket.on('updateProgress', (ave) => {
 	let str = "Measuring...";
 	if (progress < 5){
 		document.getElementById("status").style.display = "block";
@@ -13,8 +14,8 @@ socket.on('updateProgress', () => {
 			heart.style.visibility = "hidden";
 		}, 1000);	
 	}
-	else{
-		str = "Complete!"
+	else if (progress == 5){
+		str = "Complete! Average BPM: " + ave;
         document.getElementById("finish_button_div").style.display = "block";
 	}
 	statustext.textContent = str;
@@ -27,6 +28,20 @@ socket.on('nosignal', () => {
 	finishbutton.disabled = true;
 });
 
-finishbutton.addEventListener("click", function(){
+socket.on('done', () => {
+	statustext.textContent = "Sign up complete! Terminating";
 	socket.close();
 });
+
+finishbutton.addEventListener("click", function(){
+	document.getElementById("finish_button_div").style.display = "none";
+	socket.emit("finish");
+});
+
+restartbutton.addEventListener("click", function(){
+	document.getElementById("finish_button_div").style.display = "none";
+	socket.emit("restart");
+	progress = 0;
+	statustext.textContent = "Measuring...";
+});
+
