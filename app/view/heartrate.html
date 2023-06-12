@@ -11,13 +11,15 @@
     <div class="col-xl-10">
         <div class="center">
         <h3>Measuring resting heart rate</h3>
-            <label for="hrbutton" class="text-justify">1. Make sure you're sitting comfortably.<br>2. Open the Health Gauge app<br>3. Press the 'UofA' button in the hamburger menu.<br>We are measuring your resting heart rate. Try to relax for a while as <b>this process takes about 5 minutes.</b></label>
+        <h5>Press the UofA switch in Health Gauge app</h5>
+            <label for="hrbutton" class="center">Sit comfortably and try to keep the watch arm as still as possible.<br><b>This process takes about 5 minutes.</label>
         <div class="center" id="status">
             <h5 id="status_text"></h5>
             <img src="img/heart.png" width="100" height="100" style="visibility:hidden" id="heart">
         </div>
         <div class="center" id="finish_button_div" style="display: none;">
-            <button class="btn btn-primary btn-block" id="finish_button" type="button" onclick="location.href='/'"> Finish </button>
+            <button class="btn btn-primary btn-block" id="finish_button" type="button"> Finish </button>
+            <button class="btn btn-primary btn-block" id="restart_button" type="button"> Re-start measurement </button>
         </div>
         </div> 
     </div>

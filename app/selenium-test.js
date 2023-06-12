@@ -268,7 +268,6 @@ async openTabs(lib){
         await driver.executeScript("window.open('"+lib[i][1]+"', '"+i+"');", );
     }
     var windows = await driver.getAllWindowHandles();
-    console.log(windows);
     for (var i = 0; i < windows.length-1; i++) {
         await driver.switchTo().window(windows[i+1]);
         let processed = false;

@@ -17,7 +17,6 @@
   // called when sounds are loaded and system is ready
   socket.on('init123', function(msg){ 
     document.getElementById("stop").disabled = false;
-    socket.emit("restbpm", bpm);
     // start playing right when loaded
     socket.emit("startsocket", null);
     setprevtimeout = setTimeout(setPrevBpm, 90000); // timeout after 1.5 minute (900000 ms) of first sound to set previous bpm in alg
