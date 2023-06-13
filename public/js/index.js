@@ -92,7 +92,7 @@
   });
 
   socket.on('loaded', function(msg){
-    document.getElementById("h").innerHTML = "Loaded, you can now connect with the app";
+    document.getElementById("h").innerHTML = "Sounds Loaded, press the UofA button in the Health Gauge app";
   })
 
   function hideAlert(){
