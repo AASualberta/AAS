@@ -241,22 +241,24 @@ class Algorithm{
 
 	/*
  	* Return reward for previous sound
+	*
+	* Martha note: if hr is at or below thresh assign 0. Above thresh: reward = -(abs(thresh-hr))
  	*/
 	generateReward(d, pressed){
 		var bpm = d; 
-		var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
+		// var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
 		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
-		if (rate_dif == 0) {
-			rew = Math.min(0, this.upperbound - bpm);
-		}
-		var rew = Math.max(rate_dif, rest_dif);
+		// if (rate_dif == 0) {
+		// 	rew = Math.min(0, this.upperbound - bpm);
+		// }
+		// var rew = Math.max(rate_dif, rest_dif);
 		this.previous_bpm = bpm;
 		if (pressed) {
 			return -30; // maximum penalty
 		}
-		return rew;
+		//return rew;
+		return rest_dif;
 	}
-
 }
 
 module.exports = Algorithm
