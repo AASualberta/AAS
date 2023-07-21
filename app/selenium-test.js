@@ -308,7 +308,7 @@ async openTabs(lib){
                             }
                             break;
                         case 'https://mynoise.net/NoiseMachines/catPurrNoiseGenerator.php':
-                            for (var i = 0; i < 3; i++) {
+                            for (var i = 0; i < 2; i++) {
                                 await bd.sendKeys(Key.chord("j"))
                             }
                             break;
