@@ -48,7 +48,9 @@ class Database {
 	}
 
 	getRestBPM(name){
-		return this.db.get('users').find({name: name}).value().restbpm;
+		var re = this.db.get('users').find({name: name}).value().restbpm;
+		if (re) {return re;}
+		else return false;
 	}
 
 	getDriveId(name){
@@ -66,6 +68,19 @@ class Database {
 		var re = this.db.get('users[0].restbpm').value();
 		if (re) {return re;}
 		else return false;
+	}
+
+	dbEmpty(){
+		if (this.db.get('users').value().length == 0){
+			return true;
+		}
+		else return false;
+	}
+
+	cleanDB(){
+		if (this.db.get('users[0].restbpm').value() == 0){
+			this.db.get('users').remove({restbpm: 0}).write();
+		}
 	}
 }
 

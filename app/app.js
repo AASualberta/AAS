@@ -69,7 +69,6 @@ router.post('/soundscape', async (ctx, next) => {
     drivelog = new Drive(user);
     logfile = "./log/" + user + ".log";
     seleniumtest.setLogFile(logfile);
-    
     restbpm(db.getRestBPM(user)); // set restbpm for user
 
     if (user.toLowerCase() == "admin") {
@@ -194,11 +193,12 @@ router.get('/heartrate', async(ctx, next) => {
 
 router.get('/', async (ctx, next) => {
   if (!user || !inited) {
-    if (db.getFirstUserHR() > 0){
-      await ctx.render('start');
+    db.cleanDB();
+    if (db.dbEmpty()){
+      await ctx.render('signup');
     }
     else{
-      await ctx.render('signup');
+      await ctx.render('start');
     }
   }
   else {
