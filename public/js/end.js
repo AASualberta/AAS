@@ -1,6 +1,11 @@
 const submitbutton = document.getElementById("formbutton");
 
 submitbutton.addEventListener("click", function(){
-    document.getElementById("endmessage").style.display = "none";
-    document.getElementById("terminated").style.display = "block";
+    // close window
+
+    window.open("", "_self");
+    window.close();
+
+    // document.getElementById("endmessage").style.display = "none";
+    // document.getElementById("terminated").style.display = "block";
 })
