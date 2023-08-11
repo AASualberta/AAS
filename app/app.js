@@ -361,7 +361,7 @@ io.on('connection', async (socket) => {
                 if (timer.stopWithIota()){
                   timer = null;
                   total = 0;
-                  restBPM = average/3;
+                  restBPM = (average/3).toFixed(1);
                   io.sockets.to("browser").emit('updateProgress', restBPM);
                 }
                 else{
