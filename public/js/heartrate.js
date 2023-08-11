@@ -9,13 +9,14 @@ socket.on('updateProgress', (ave) => {
 	let str = "Measuring...";
 	if (progress < 5){
 		document.getElementById("status").style.display = "block";
-		heart.style.visibility = "visible";
+		heart.style.visibility = "hidden";
 		setTimeout(function(){
-			heart.style.visibility = "hidden";
-		}, 1000);	
+			heart.style.visibility = "visible";
+		}, 400);	
 	}
 	else if (progress == 5){
 		str = "Complete! Average BPM: " + ave;
+		heart.style.visibility = "hidden";
         document.getElementById("finish_button_div").style.display = "block";
 	}
 	statustext.textContent = str;
@@ -24,6 +25,7 @@ socket.on('updateProgress', (ave) => {
 
 socket.on('nosignal', () => {
 	console.log("No signal from watch! Please contact Mariia! \n Ending Session.");
+	heart.style.visibility = "hidden";
 	statustext.textContent = "No signal from watch! Please contact Mariia! \n Ending Session.";
 	finishbutton.disabled = true;
 });
