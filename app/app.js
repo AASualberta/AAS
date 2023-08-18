@@ -386,6 +386,9 @@ io.on('connection', async (socket) => {
   socket.on('disconnect', () => {
     console.log(`socket ${socket.id} disconnected.`);
     if (killOnDisconnect){
+      io.sockets.to("browser").emit('nosignal', null); // phone disconnected. stop
+      let str = "Timestamp: "+Date.now()+"; phone disconnected!\n";
+      fs.appendFileSync(logfile, str);
       setTimeout(function(){  // wait 2 seconds before stopping
         if (killOnDisconnect){
           stop(true);
