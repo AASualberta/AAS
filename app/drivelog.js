@@ -81,6 +81,7 @@ class Drive {
         var buffer = "";
         content.split(/\r?\n/).forEach(line =>  {
             if (line != "" && line != "\n") {
+                //console.log(line);
                 let encryptedData = encryptString(line);
                 buffer += encryptedData + "\n";
             }
