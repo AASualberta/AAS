@@ -308,7 +308,6 @@ io.on('connection', async (socket) => {
                 total += 1;
                 seleniumtest.addBPM(data.heartrate);
                 if (total == 5 && !critHR) {
-                  console.log("critHR");
                   stop(true);
                 }
                 else if (critHR){
