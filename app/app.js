@@ -85,7 +85,7 @@ router.post('/soundscape', async (ctx, next) => {
     soundscapes_listen = true;
 
     // log user mood description
-    let str = "Timestamp: "+Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
+    let str = Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
     fs.appendFileSync(logfile, str);
   }
   else{
@@ -152,7 +152,7 @@ router.post('/signin', async (ctx, next) => {
 })
 
 router.post('/end', async(ctx, next) => {
-  let str = "Timestamp: "+Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
+  let str = Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
   fs.appendFileSync(logfile, str);
   await logToDrive();
   process.exit();
@@ -253,7 +253,7 @@ async function stop(fromTimeout){
   else{
     sessionTime = timer.getSessionTime();
   }
-  var str = "Timestamp: "+Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
+  var str = Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
   fs.appendFileSync(logfile, str);
   db.updateTime(user, sessionTime);
   seleniumtest.close(fromTimeout);
@@ -281,14 +281,14 @@ io.on('connection', async (socket) => {
 
   socket.on('message', function name(data) {
     if (!paused){
-      fs.appendFileSync(logfile, "Timestamp: "+Date.now()+"; received message from watch: "+JSON.stringify(data)+"\n");
+      fs.appendFileSync(logfile, Date.now()+"; received message from watch: "+JSON.stringify(data)+"\n");
       console.log(data)
       if (soundscapes_listen){  // handle data on soundscapes page
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
             if (data.id == user){
               console.log("connected");
-              let str = "Timestamp: "+Date.now()+"; connected with watch\n";
+              let str = Date.now()+"; connected with watch\n";
               fs.appendFileSync(logfile, str);
               bpm_connected = true;
               io.sockets.to("browser").emit("init123", "world");
@@ -308,6 +308,7 @@ io.on('connection', async (socket) => {
                 total += 1;
                 seleniumtest.addBPM(data.heartrate);
                 if (total == 5 && !critHR) {
+                  console.log("critHR");
                   stop(true);
                 }
                 else if (critHR){
@@ -387,7 +388,7 @@ io.on('connection', async (socket) => {
     console.log(`socket ${socket.id} disconnected.`);
     if (killOnDisconnect){
       io.sockets.to("browser").emit('nosignal', null); // phone disconnected. stop
-      let str = "Timestamp: "+Date.now()+"; phone disconnected!\n";
+      let str = Date.now()+"; phone disconnected!\n";
       fs.appendFileSync(logfile, str);
       setTimeout(function(){  // wait 2 seconds before stopping
         if (killOnDisconnect){
@@ -426,11 +427,12 @@ io.on('connection', async (socket) => {
 
   socket.on("startsocket", async (arg) => {
     await seleniumtest.startFirstSound().then((e)=>{
-      let str = "Timestamp: "+ Date.now()+ "; Action: started" + e[1] + "\n";
+      let str = Date.now()+ "; Action: started" + e[1] + "\n";
       fs.appendFileSync(logfile, str);
       socket.emit("next", e[0]);
     });
     timer = new SimpleTimer(callbackfn);
+    timer.startIota();
   });
 
   socket.on("nextsocket", async (arg) => {
@@ -455,7 +457,7 @@ io.on('connection', async (socket) => {
 
   socket.on("stopsocket", async (arg) => {
     if (arg){ // timeout
-      let str = "Timestamp: "+ Date.now()+ "; Action: session timed out\n";
+      let str = Date.now()+ "; Action: session timed out\n";
       fs.appendFileSync(logfile, str);
     }
     killOnDisconnect = false;
@@ -486,13 +488,13 @@ io.on('connection', async (socket) => {
 
   socket.on("epsilon", async (arg) =>{
     seleniumtest.changeEpsilon(parseFloat(arg));
-    let str = ("Timestamp: " + Date.now() + "; Action: change epsilon to: " + arg+ "\n");
+    let str = (Date.now() + "; Action: change epsilon to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
   socket.on("alpha", async(arg) => {
     seleniumtest.changeAlpha(parseFloat(arg));
-    let str = ("Timestamp: " + Date.now() + "; Action: change alpha to: " + arg+ "\n");
+    let str = (Date.now() + "; Action: change alpha to: " + arg+ "\n");
     fs.appendFileSync(logfile, str);
   })
 
@@ -501,7 +503,7 @@ io.on('connection', async (socket) => {
   })
 
   function callbackfn(){ // chnage this so it ends session
-    let str = ("Timestamp: " + Date.now() + "; No signal from watch!\n");
+    let str = (Date.now() + "; No signal from watch!\n");
     fs.appendFileSync(logfile, str);
     io.sockets.to("browser").emit('nosignal', null);
     setTimeout(function(){  // wait 2 seconds before stopping
@@ -523,7 +525,7 @@ io.on('connection', async (socket) => {
             a = "switched";
             break;
         }
-        let str = ("Timestamp: "+ Date.now()+ "; Action: "+ a + e[1]+ "\n");
+        let str = (Date.now()+ "; Action: "+ a + e[1]+ "\n");
         fs.appendFileSync(logfile, str);
         socket.emit("next", e[0]);
         // seleniumtest.getVolume().then((v) =>{
@@ -659,7 +661,7 @@ io.on('connection', async (socket) => {
     this.pause = function() {
       seleniumtest.pause()
       clearTimeout(timerId);
-      let str = "Timestamp: "+ Date.now()+ "; Action: pause\n";
+      let str = Date.now()+ "; Action: pause\n";
       fs.appendFileSync(logfile, str);
       total += Date.now() - lastStart; // update time spent in training
     };
@@ -667,7 +669,7 @@ io.on('connection', async (socket) => {
     this.resume = async function() {
       firstHR = true;
       seleniumtest.pause()
-      let str = "Timestamp: "+ Date.now()+ "; Action: resume; restarting previous sound\n";
+      let str = Date.now()+ "; Action: resume; restarting previous sound\n";
       fs.appendFileSync(logfile, str);
       start = Date.now();
       clearTimeout(timerId);
@@ -703,7 +705,7 @@ io.on('connection', async (socket) => {
       clearTimeout(timerId);
       if (!this.checkIota()){
         // log iota not reached to file
-        let str = "Timestamp: "+ Date.now()+ "; Action: stop; Iota not reached\n";
+        let str = Date.now()+ "; Action: stop; Iota not reached\n";
         fs.appendFileSync(logfile, str);
         return false;
       }

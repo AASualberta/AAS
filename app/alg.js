@@ -28,7 +28,7 @@ function readActionValuesFromFile(filename) {
 	}
 	var lines = fs.readFileSync(filename, 'utf-8').split('\n');
 	for (var i = lines.length - 1; i >= 0; i--) { // get latest action values from logfile
-		if (lines[i].includes("value_function")){
+		if (lines[i].includes("values")){
 			var temp = lines[i].split(";");
 			var actionValues = temp[temp.length-2].split(':')[1].match(/(\-\d|\d)+(?:\.\d+)?/g).map(Number);
 			return actionValues;
@@ -71,7 +71,7 @@ class Algorithm{
 		this.current = Math.floor(Math.random() * this.num);
 		this.step_size = 0.7;
 		this.mode = 0; // 0: training, 1: therapeutic
-		this.msg = "; value_function: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
+		this.msg = "; values: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
 		
 		this.started = 0;
 		this.gamma = 0.9;
@@ -83,7 +83,7 @@ class Algorithm{
 
 	setMode(mode){
 		this.mode = mode;
-		this.msg = "; value_function: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
+		this.msg = "; values: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
 	}
 
 	getModeMsg(mode) {
@@ -120,7 +120,7 @@ class Algorithm{
 			this.values = values;
 			this.loadPolicy();
 		}
-		this.msg = "; value_function: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(mode);
+		this.msg = "; values: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(mode);
 	}
 
 	setAlpha(alpha){
@@ -159,7 +159,7 @@ class Algorithm{
 			this.current = this.Greedy(pressed, rew, isRandom);
 		}
 		//console.log(this.current);
-		this.msg = "; reward: "+rew.toString()+ "; value_function: "+actionValueLog(this.values, this.num) + "; mode: "+ m;
+		this.msg = "; reward: "+rew.toFixed(1).toString()+ "; values: "+actionValueLog(this.values, this.num) + "; mode: "+ m;
 		return this.current;
 	}
 
