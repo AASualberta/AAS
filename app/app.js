@@ -271,11 +271,10 @@ io.on('connection', async (socket) => {
   else if (!hgConnected){
     socket.join('hg');
     console.log("hg connected");
-    hgConnected = true;
   }
   else{
-    console.log("too many connections");
-    // kill here?
+    console.log("already connected");
+    socket.disconnect();
   }
 
 
@@ -287,11 +286,17 @@ io.on('connection', async (socket) => {
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
             if (data.id == user){
+              hgConnected = true;
               console.log("connected");
               let str = Date.now()+"; connected with watch\n";
               fs.appendFileSync(logfile, str);
               bpm_connected = true;
               io.sockets.to("browser").emit("init123", "world");
+            }
+            else{
+              console.log("wrong user, disconnecting");
+              socket.leave('hg');
+              socket.disconnect();
             }
           }
           else if (data.command == "Heartrate"){
@@ -385,7 +390,7 @@ io.on('connection', async (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`socket ${socket.id} disconnected.`);
-    if (killOnDisconnect){
+    if (killOnDisconnect && hgConnected){
       io.sockets.to("browser").emit('nosignal', null); // phone disconnected. stop
       let str = Date.now()+"; phone disconnected!\n";
       fs.appendFileSync(logfile, str);
