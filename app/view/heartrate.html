@@ -2,7 +2,8 @@
 <script src="js/socket.io.js"></script>
 <script src="js/bootstrap.min.js"></script>
 <script>
-    const socket = io("http://localhost:3000/");
+    const host = window.location.host;
+    const socket = io("http://" + host + "/");
 </script>
 
 <div class="container">
