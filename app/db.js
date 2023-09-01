@@ -57,6 +57,10 @@ class Database {
 		return this.db.get('users').find({name: name}).value().driveid;
 	}
 
+	// getPortNumber(name){
+	// 	return this.db.get('users').find({name: name}).value().port;
+	// }
+
 	setDriveId(name, id){
 		this.db.get('users')
 		.find({ name: name})

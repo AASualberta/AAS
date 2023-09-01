@@ -1,4 +1,6 @@
 // app/app.js
+// ENTER THE PORT NUMBER BELOW AND SAVE THE FILE
+const portnumber = 8000;
 const http = require('http');
 const path = require('path');
 const Koa = require('koa');
@@ -128,7 +130,7 @@ router.post('/signin', async (ctx, next) => {
     else {
       // haven't signed up yet, requires to sign up first
       ctx.response.status = 400;
-      ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+      ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:" + portnumber + "'\" >return to main page </button> ";
     }
   }
   else {
@@ -730,13 +732,13 @@ io.on('connection', async (socket) => {
   };
 });
 
-server.listen(3000, () => {
-    console.log('server is running at http://localhost:3000');
+server.listen(portnumber, () => {
+    console.log('server is running at http://localhost:' + portnumber);
 });
 
 async function openBrowser(){
   import('open').then(open =>{
-    open.default('http://localhost:3000');
+    open.default('http://localhost:' + portnumber);
   });
 }
 

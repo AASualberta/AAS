@@ -1,3 +1,0 @@
-X when starting, delete old entry if it has 0hr
-X tie break for best index
-HR flash during signup.
