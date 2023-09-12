@@ -17,11 +17,11 @@ class Database {
 		else return false;
 	}
 
-	addUser(name, restbpm) {
+	addUser(name, restbpm, port) {
 		var filename = "./log/" + name + ".log";
 		if (!this.findName(name)) { // add new user
 			this.db.get('users')
-  			.push({ name: name, restbpm: restbpm, totaltime: 0, driveid: -1})
+  			.push({ name: name, restbpm: restbpm, totaltime: 0, driveid: -1, port: port})
   			.write()
 
 		}
@@ -57,9 +57,9 @@ class Database {
 		return this.db.get('users').find({name: name}).value().driveid;
 	}
 
-	// getPortNumber(name){
-	// 	return this.db.get('users').find({name: name}).value().port;
-	// }
+	getPortNumber(name){
+		return this.db.get('users').find({name: name}).value().port;
+	}
 
 	setDriveId(name, id){
 		this.db.get('users')
