@@ -296,18 +296,12 @@ dataio.on('connection', async (socket) => {
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
             if (data.id == user){
-              hgConnected = true;
               console.log("connected");
               let str = Date.now()+"; connected with watch\n";
               fs.appendFileSync(logfile, str);
               bpm_connected = true;
               browserSocket.emit("init123", "world");
               browserSocket.emit("setMode", mode);
-            }
-            else{
-              console.log("wrong user, disconnecting");
-              socket.leave('hg');
-              socket.disconnect();
             }
           }
           else if (data.command == "Heartrate"){
