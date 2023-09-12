@@ -1,11 +1,8 @@
   const nextbutton = document.getElementById("next");
   const stopbutton = document.getElementById("stop"); 
-  const formbutton = document.getElementById("formbutton");
-  const modebutton = document.getElementsByName("mode");
   const pausebutton = document.getElementById("pause");
   const title = document.getElementById("h");
   const alert = document.getElementById("alert");
-  const paramsbutton = document.getElementById("params");
 
   var bpm;
   var volume;
@@ -59,23 +56,23 @@
 
   })
 
-  socket.on('isAdmin', function(msg) {
-    if (msg) {
-      document.getElementById("parambutton").style.display = "flex";
-      paramsbutton.disabled = false;
-      for (var i = 0; i < modebutton.length; i++) {
-        modebutton[i].disabled = false;
-      }
-    }
-    else {
-      document.getElementById("parambutton").style.display = "none";
-      paramsbutton.disabled = true;
-      document.getElementById("modebuttons").style.display = "none";
-      for (var i = 0; i < modebutton.length; i++) {
-        modebutton[i].disabled = true;
-      }
-    }
-  })
+  // socket.on('isAdmin', function(msg) {
+  //   if (msg) {
+  //     document.getElementById("parambutton").style.display = "flex";
+  //     paramsbutton.disabled = false;
+  //     for (var i = 0; i < modebutton.length; i++) {
+  //       modebutton[i].disabled = false;
+  //     }
+  //   }
+  //   else {
+  //     document.getElementById("parambutton").style.display = "none";
+  //     paramsbutton.disabled = true;
+  //     document.getElementById("modebuttons").style.display = "none";
+  //     for (var i = 0; i < modebutton.length; i++) {
+  //       modebutton[i].disabled = true;
+  //     }
+  //   }
+  // })
 
   socket.on('surfing', function(msg){
     document.getElementById("alert").innerHTML = "Stop surfing and listen!"
@@ -99,24 +96,20 @@
     document.getElementById("alert").style.visibility = "hidden";
   }
 
-  var prev = null;
-  for (var i = 0; i < modebutton.length; i++) {
-      modebutton[i].addEventListener('change', function() {
-          if (this !== prev) {
-              prev = this;
-          }
-          if (this.value == "Training") {
-            socket.emit("mode",0); // 0: training
-          }
-          else{
-            socket.emit("mode",1); // 1: therapeutic
-          }
-      });
-  }
-  
-  paramsbutton.addEventListener('click', function() {
-    document.getElementById("collapseExample").classList.toggle("show");
-  })
+  // var prev = null;
+  // for (var i = 0; i < modebutton.length; i++) {
+  //     modebutton[i].addEventListener('change', function() {
+  //         if (this !== prev) {
+  //             prev = this;
+  //         }
+  //         if (this.value == "Training") {
+  //           socket.emit("mode",0); // 0: training
+  //         }
+  //         else{
+  //           socket.emit("mode",1); // 1: therapeutic
+  //         }
+  //     });
+  // }
 
 
   nextbutton.addEventListener('click', function() {
@@ -178,17 +171,17 @@
 //   volume = slideAmount;
 // });
 
-document.getElementById("epsilon_range").addEventListener("change", function() {
-  var epsilon_range = document.getElementById("epsilon_range").value;
-  socket.emit("epsilon", epsilon_range);
-  document.getElementById("epsilon_value").innerHTML = epsilon_range;
-});
+// document.getElementById("epsilon_range").addEventListener("change", function() {
+//   var epsilon_range = document.getElementById("epsilon_range").value;
+//   socket.emit("epsilon", epsilon_range);
+//   document.getElementById("epsilon_value").innerHTML = epsilon_range;
+// });
 
-document.getElementById("alpha_range").addEventListener("change", function() {
-  var alpha_range = document.getElementById("alpha_range").value;
-  socket.emit("alpha", alpha_range);
-  document.getElementById("alpha_value").innerHTML = alpha_range;
-});
+// document.getElementById("alpha_range").addEventListener("change", function() {
+//   var alpha_range = document.getElementById("alpha_range").value;
+//   socket.emit("alpha", alpha_range);
+//   document.getElementById("alpha_value").innerHTML = alpha_range;
+// });
 
 
 // socket.on("volume",function(msg){
