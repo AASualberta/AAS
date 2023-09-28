@@ -165,7 +165,12 @@ router.post('/signin', async (ctx, next) => {
 router.post('/end', async(ctx, next) => {
   let str = Date.now()+"; Post log: "+ctx.request.body['endmood']+"\n";
   fs.appendFileSync(logfile, str);
-  await logToDrive();
+  try{
+    await logToDrive();
+  }
+  catch(err){
+    console.log("failed to log to drive");
+  }
   process.exit();
 })
 
