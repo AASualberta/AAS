@@ -1,4 +1,0 @@
-Arm 1: normal
-Arm 2: therapeutic but reset values back to 0
-Arm 3: Grey noise, No learning
-Arm 4: No sound, no learning.
