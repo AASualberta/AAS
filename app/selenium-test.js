@@ -63,6 +63,10 @@ async loadValues(user, mode) {
     alg.loadValues(userfile, mode);
 }
 
+async resetValues(user, mode) {
+    alg.resetValues();
+}
+
 async changeAlpha(alpha) {
     alg.setAlpha(alpha);
 }
@@ -168,6 +172,16 @@ async startFirstSound(){
     })
 }
 
+async startGrey(){
+    var window = await driver.getAllWindowHandles();
+    await driver.switchTo().window(window[1]);
+    var msg = driver.findElement(By.css('body')).then(async (el)=>{
+        el.sendKeys(Key.chord("p")).then((a)=>{
+            //console.log("unmute...");
+        }).catch((e) => { console.error(e.message) });
+    }).catch((e) => { console.error(e.message) });
+}
+
 async playNext(mode, pressed){
     /*
         1. Mute currently playing soundscape.
@@ -222,7 +236,7 @@ async init(){
         3. Select a part of categories.
         4. Initialize the browser and all tabs, load all sounds.
     */
-    var SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
+    // var SELENIUM_REMOTE_URL = "https://mynoise.net/noiseMachines.php";
     /*var allSounds = [];
     // Initialize the driver.
     driver.get(SELENIUM_REMOTE_URL);
@@ -247,6 +261,11 @@ async init(){
 
     //Open all tabs and wait until all sounds are loaded.
     await this.openTabs(lib);
+    return true;
+}
+
+async initGrey(){
+    await this.openTabs([['Grey Noise', 'https://mynoise.net/NoiseMachines/greyNoiseGenerator.php']]);
     return true;
 }
 

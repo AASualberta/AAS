@@ -123,6 +123,13 @@ class Algorithm{
 		this.msg = "; values: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(mode);
 	}
 
+	resetValues(){
+		var values = Array(this.num).fill(0);
+		this.values = values;
+		this.loadPolicy();
+		this.msg = "; values: "+actionValueLog(this.values, this.num) + "; mode: " + this.getModeMsg(this.mode);
+	}
+
 	setAlpha(alpha){
 		this.step_size = alpha;
 	}

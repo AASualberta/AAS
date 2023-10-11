@@ -25,6 +25,7 @@ const dataServer = http.createServer(app.callback());
 var dataio = require('socket.io')(dataServer);
 
 var portnumber = 0;
+var arm = 1; // default arm for experiments is 1
 
 var browserConnected = false;
 var hgConnected = false;
@@ -84,15 +85,17 @@ router.post('/soundscape', async (ctx, next) => {
 
     await ctx.render('soundscape');
     if (!inited) {
-      bpmUsedForAlg = true;
-      
-      initialize();
+      if (arm == 1 || arm == 2 || arm == 3){
+        initialize();
+      }
     }
 
     soundscapes_listen = true;
 
     // log user mood description
-    let str = Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
+    let str = Date.now()+"; Experiment Arm: "+arm+"\n";
+    fs.appendFileSync(logfile, str);
+    str = Date.now()+"; Pre log: "+ctx.request.body['mood']+"\n";
     fs.appendFileSync(logfile, str);
   }
   else{
@@ -110,11 +113,31 @@ router.get('/soundscape', async (ctx, next) => {
 })
 
 router.post('/signin', async (ctx, next) => {
+  let nait = ctx.request.body['nait']
+  
+  if (nait == "2arm"){
+    arm = 2;
+    // reset values to 0
+  }
+  else if (nait == "3arm"){
+    arm = 3;
+    // grey noise. No learning
+  }
+  else if (nait == "4arm"){
+    arm = 4;
+    // no sound. no learning
+  }
+
   if (user != ctx.request.body['username']) {
     var re = db.findName(ctx.request.body['username']); // check if user exists
     if (re){
       user = re["name"]; // get user name
-      seleniumtest.loadValues(user); // load action values from file
+      if (arm == 1){
+        seleniumtest.loadValues(user); // load action values from file
+      }
+      else if (arm == 2){
+        seleniumtest.resetValues(user+"_arm2"); // set action values to 0
+      }
 
       // check if training time > 3hours
       if (db.findTime(user) > 10800000){
@@ -139,7 +162,7 @@ router.post('/signin', async (ctx, next) => {
     else {
       // haven't signed up yet, requires to sign up first
       ctx.response.status = 400;
-      ctx.response.body = "<p>You have to sign up first!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
+      ctx.response.body = "<p>This user does not exist!</p></br><button class=\"btn btn-block\" onclick=\"location.href='http://localhost:3000'\" >return to main page </button> ";
     }
   }
   // else {
@@ -229,15 +252,29 @@ router.get('/', async (ctx, next) => {
 });
 
 async function initialize(){
-  await seleniumtest.init().then(()=>{
+  if (arm == 1 || arm == 2){
+    await seleniumtest.init().then(()=>{
+        inited = true;
+        if (!bpm_connected){
+          browserSocket.emit("loaded");
+        }
+        else{ // already connnected from resting hr
+          browserSocket.emit("init123", "world");
+        }
+      })
+    }
+  else if (arm == 3){
+    await seleniumtest.initGrey().then(()=>{
       inited = true;
-      if (!bpm_connected){
+      browserSocket.emit("arm34", null);
+            if (!bpm_connected){
         browserSocket.emit("loaded");
       }
       else{ // already connnected from resting hr
         browserSocket.emit("init123", "world");
       }
     })
+  }
 }
 
 async function restbpm(arg){
@@ -311,31 +348,37 @@ dataio.on('connection', async (socket) => {
           }
           else if (data.command == "Heartrate"){
             if (bpm_connected && inited){
-              if (firstHR){ // ignore first hr (bad)
-                firstHR = false;
-                if (timer){
-                  total = 0;
-                  timer.stop();
-                  timer.startIota();
+              if (arm == 1 || arm == 2){
+                if (firstHR){ 
+                  firstHR = false;
+                  if (timer){
+                    total = 0;
+                    timer.stop();
+                    timer.startIota();
+                  }
+                }
+                else{ 
+                  total += 1;
+                  seleniumtest.addBPM(data.heartrate);
+                  if (total == 5 && !critHR) {
+                    stop(true);
+                  }
+                  else if (critHR){
+                    let timeElapsed = timer.getSessionTime();
+                    if (timeElapsed + db.findTime(user) > 10800000){
+                      mode = 1;
+                      seleniumtest.setMode(1);
+                      browserSocket.emit("setMode", mode);
+                    }
+                    total = 0;
+                    critHR = false;
+                    timer.switch();
+                  }
                 }
               }
-              else{ 
-                total += 1;
+              else if (arm == 3 || arm == 4){
                 seleniumtest.addBPM(data.heartrate);
-                if (total == 5 && !critHR) {
-                  stop(true);
-                }
-                else if (critHR){
-                  let timeElapsed = timer.getSessionTime();
-                  if (timeElapsed + db.findTime(user) > 10800000){
-                    mode = 1;
-                    seleniumtest.setMode(1);
-                    browserSocket.emit("setMode", mode);
-                  }
-                  total = 0;
-                  critHR = false;
-                  timer.switch();
-                }
+                timer.start();
               }
             }
           }
@@ -343,7 +386,7 @@ dataio.on('connection', async (socket) => {
       }
       else if (signup_listen){  // handle data on signup page (get resting hr)
         if (!timer){
-          timer = new SimpleTimer(callbackfn);
+          timer = new ComplexTimer(callbackfn);
         }
         if (data.hasOwnProperty("command")){
           if (data.command == "Connect"){
@@ -416,19 +459,32 @@ browserio.on('connection', async (socket) => {
     console.log("browser connected");
     browserConnected = true;
     browserSocket = socket;
+    if (arm == 3){
+      browserSocket.emit("arm34", null);
+    }
+    if (arm == 4){ //initialize arm 4 here
+      inited = true;
+      browserSocket.emit("arm34", null);
+      if (!bpm_connected){
+        browserSocket.emit("loaded");
+      }
+      else{ // already connnected from resting hr
+        browserSocket.emit("init123", "world");
+      }
+    }
   }
   else{
     console.log("too many connections to browser");
     // kill here?
   }
 
-  if (inited) {
+  // if (inited) {
 
-    if (pause_num%2 == 0) {
-      socket.emit("reload", false);
-    }
-    else socket.emit("reload", true);
-  } 
+  //   if (pause_num%2 == 0) {
+  //     socket.emit("reload", false);
+  //   }
+  //   else socket.emit("reload", true);
+  // } 
   
   socket.on("finish", async (arg) => {
     let str = "resting heart rate: " + restBPM + "; Signed up\n";
@@ -449,13 +505,31 @@ browserio.on('connection', async (socket) => {
   });
 
   socket.on("startsocket", async (arg) => {
-    await seleniumtest.startFirstSound().then((e)=>{
-      let str = Date.now()+ "; Action: started" + e[1] + "\n";
+    if (arm == 1 || arm == 2){
+      await seleniumtest.startFirstSound().then((e)=>{
+        let str = Date.now()+ "; Action: started" + e[1] + "\n";
+        fs.appendFileSync(logfile, str);
+        socket.emit("next", e[0]);
+      });
+      timer = new ComplexTimer(callbackfn);
+      timer.startIota();
+    }
+    else if (arm == 3){
+      await seleniumtest.startGrey().then(()=>{
+        let str = Date.now()+ "; Action: started grey noise\n";
+        fs.appendFileSync(logfile, str);
+        socket.emit("next", null);
+      });
+      timer = new SimpleTimer(callbackfn);
+      timer.start();
+    }
+    else if (arm == 4){
+      let str = Date.now()+ "; Action: started no sound\n";
       fs.appendFileSync(logfile, str);
-      socket.emit("next", e[0]);
-    });
-    timer = new SimpleTimer(callbackfn);
-    timer.startIota();
+      socket.emit("next", null);
+      timer = new SimpleTimer(callbackfn);
+      timer.start();
+    }
   });
 
   socket.on("nextsocket", async (arg) => {
@@ -558,7 +632,7 @@ async function playNext(action){
 }
 
 
-var SimpleTimer = function(callback) {
+var ComplexTimer = function(callback) {
   var timerId, start;
   var delta = 30000; // 30 seconds
   var longTime = 420000; // 7 minutes
@@ -637,7 +711,7 @@ var SimpleTimer = function(callback) {
         callbackfn();
       }, delta);
     }, iota);
-}
+  }
 
   this.stopWithIota = function(){
     clearTimeout(timerId);
@@ -668,6 +742,24 @@ var SimpleTimer = function(callback) {
   }
 };
 
+var SimpleTimer = function(callback) {
+  var lastStart = Date.now();
+  var timerId;
+
+  this.start = function(){
+    if (timerId){
+      clearTimeout(timerId);
+      timerId = null;
+    }
+    timerId = setTimeout(callback, 300000); // 5 minutes
+  }
+    
+  this.getSessionTime = function(){
+    total += Date.now() - lastStart; // update time spent in training
+    return total;
+  }
+};
+
 browserServer.listen(3000, () => {
     console.log('browser server is running at http://localhost:3000');
 });
@@ -681,5 +773,3 @@ async function openBrowser(){
 openBrowser();
 
 module.exports = browserServer;
-
-

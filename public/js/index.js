@@ -24,6 +24,12 @@
     // document.getElementById("volume-control").disabled = false;
   });
 
+  socket.on('arm34', function(msg){
+    pausebutton.style.display = "none";
+    nextbutton.style.display = "none";
+    document.getElementById("switchmessage").style.display = "none";
+  })
+
   socket.on('setMode', function(msg){
     if (msg == 0){
       currentMode = "Discovery Mode"
@@ -89,7 +95,7 @@
   });
 
   socket.on('loaded', function(msg){
-    document.getElementById("h").innerHTML = "Sounds Loaded, press the UofA button in the Health Gauge app";
+    document.getElementById("h").innerHTML = "Sounds Loaded, press the UofA button in the Health Gauge app and connect in the researcher profile";
   })
 
   function hideAlert(){
