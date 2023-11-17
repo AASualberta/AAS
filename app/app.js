@@ -6,10 +6,11 @@ const serve = require('koa-static');
 const koaRouter = require('koa-router');
 const koaBody = require('koa-body');
 const render = require('koa-ejs');
+
 const seleniumtest = require('./selenium-test.js');
 const json = require('json')
 const fs = require('fs');
-
+// low db
 const db = require('./db.js')
 
 const Drive = require('./drivelog');
@@ -18,17 +19,19 @@ const { set } = require('mongoose');
 const app = module.exports = new Koa();
 const router = koaRouter();
 
+// http instance for the server to connect to
 const browserServer = http.createServer(app.callback());
 var browserio = require('socket.io')(browserServer);
 
+// http instance for the phone to connect to 
 const dataServer = http.createServer(app.callback());
 var dataio = require('socket.io')(dataServer);
 
-var portnumber = 0;
+var portnumber = 0; // portnumber is assigned manually
 var arm = 1; // default arm for experiments is 1
 
-var browserConnected = false;
-var hgConnected = false;
+var browserConnected = false; 
+var hgConnected = false; // true once a watch connects
 var killOnDisconnect = false;
 var firstHR = false;
 var critHR = false;

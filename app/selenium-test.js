@@ -149,7 +149,7 @@ async startFirstSound(){
         Play the first soundscape.
     */
     var self = this;
-    var ind = alg.current;
+    var ind = alg.getFirstSound();
     //console.log(alg.current);
     var windows = await driver.getAllWindowHandles();
     await driver.switchTo().window(windows[ind+1]);
