@@ -68,7 +68,7 @@ class Algorithm{
 		this.previous_bpm = -1;
 		this.restbpm = 60; //set default restbpm
 		this.upperbound = this.restbpm + 5; //default upper bound of restbpm
-		this.current = Math.floor(Math.random() * this.num);
+		this.current = null;
 		this.step_size = 0.7;
 		this.mode = 0; // 0: training, 1: therapeutic
 		this.msg = "; values: "+actionValueLog(this.values, this.num)+"; mode: " + this.getModeMsg(this.mode);
@@ -138,6 +138,15 @@ class Algorithm{
 		this.epsilon = epsilon;
 	}
 
+	getFirstSound(){
+		if (this.mode == 0) { //training
+			this.current = Math.floor(Math.random() * this.num);
+		}
+		else{ //therapeutic
+			this.current = indexOfMax(this.values);
+		}
+		return this.current;
+	}
 	/*
  	* Return index of next sound to be played
  	*/
@@ -148,8 +157,8 @@ class Algorithm{
 		this.update(rew);
 		if (this.mode == 0) { //training
 			m = "training";
-			if (pressed){
-				this.current = this.Greedy(pressed, rew, true);
+			if (pressed){ // if next button pressed
+				this.current = this.randomIndex();
 			}
 			else{
 				this.current = this.epsilonGreedy();
@@ -157,38 +166,41 @@ class Algorithm{
 			
 		}
 		else{ //therapeutic
-			m = "therapeutic";
-			var isRandom = 0;
-			if (!this.started) {
-				isRandom = 1;
-				this.started = 1;
+			var therapeutic;
+			if (!pressed) {
+				therapeutic = this.isTherapeutic(d);
 			}
-			this.current = this.Greedy(pressed, rew, isRandom);
+			else{
+				therapeutic = 0;
+			}
+			m = "therapeutic";
+			this.current = this.Greedy(therapeutic);
 		}
-		//console.log(this.current);
+		
 		this.msg = "; reward: "+rew.toFixed(1).toString()+ "; values: "+actionValueLog(this.values, this.num) + "; mode: "+ m;
 		return this.current;
 	}
 
-	Greedy(pressed, rew, isRandom){
-		if (isRandom) {
-			var ind = Math.floor(Math.random() * this.num);
+	randomIndex(){
+		// return random index in range [0, num) that is not current
+		var ind = Math.floor(Math.random() * this.num);
 			while (ind == this.current) {
 				ind = Math.floor(Math.random() * this.num);
 			}
 			return ind;
-		}
-		var current;
+	}
 
-		if (rew<0 || pressed) { // choose highest vlaue that isn't current
+	Greedy(therapeutic){
+		var current;
+		if (!therapeutic) { // choose highest vlaue that isn't current
 			var temp = this.values[this.current];
 			this.values[this.current] = -Infinity;
 			current = indexOfMax(this.values);
 			this.values[this.current] = temp;
 		}
-		else
+		else { // else stay at current sound
 			current = this.current;
-
+		}
 		return current;
 	}
 
@@ -240,6 +252,15 @@ class Algorithm{
 		//console.log("prev set to " + d);
 	}
 
+	isTherapeutic(d){
+		/* 
+		* Return 1 if sound is therapeutic, 0 otherwise
+		* Sound is therapeutic if it is less then previous bpm or less then or equal to uperbound threshold. 
+		*/
+		var bpm = d;
+		return (bpm < this.previous_bpm || bpm <= this.upperbound);
+	}
+
 	/*
  	* Return reward for previous sound
 	*
@@ -247,12 +268,7 @@ class Algorithm{
  	*/
 	generateReward(d, pressed){
 		var bpm = d; 
-		// var rate_dif = this.previous_bpm - bpm;  // heart rate increases: negative, heart rate decreases: positive
-		var rest_dif = Math.min(0, this.upperbound - bpm); // good: 0, bad: negative
-		// if (rate_dif == 0) {
-		// 	rew = Math.min(0, this.upperbound - bpm);
-		// }
-		// var rew = Math.max(rate_dif, rest_dif);
+		var rest_dif = Math.min(0, this.upperbound - bpm);
 		this.previous_bpm = bpm;
 		if (pressed) {
 			return -30; // maximum penalty

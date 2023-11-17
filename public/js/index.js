@@ -95,7 +95,7 @@
   });
 
   socket.on('loaded', function(msg){
-    document.getElementById("h").innerHTML = "Sounds Loaded, press the UofA button in the Health Gauge app and connect in the researcher profile";
+    document.getElementById("h").innerHTML = "Sounds Loaded, Refer to the AAS User Guide for the next steps";
   })
 
   function hideAlert(){
