@@ -1,44 +1,5 @@
 # AAS
-
-## Program Setup
-This program is for experimental use only.
-
-### For Mac users:
-
-#### If you have installed **Node**, and **chromedriver**, 
-* start the program:
-```shell
-npm install
-chmod u+x start.sh
-./start.sh
-```
-* Open another browser window, and go to [localhost:3000](http://localhost:3000/)
----
-#### If you havn't installed **Node**, and **chromedriver**, 
-
-* Download the project.
-```shell
-git clone https://github.com/YouruiGuo/AAS.git
-cd AAS
-```
-* Install dependencies. You may need to enter password for downloading dependencies.
-```shell
-chmod u+x script.sh
-sudo ./script.sh
-```
-
-* Start the program:
-```shell
-npm install
-chmod u+x start.sh
-./start.sh
-```
-* Open another browser window, and go to [localhost:3000](http://localhost:3000/)
-
----
-
-#### Uninstall all dependencies and packages:
-```shell
-chmod u+x uninstall_script.sh
-./uninstall_script.sh
-```
+* **_Autonomously Adaptive Soundscapes for Reducing Stress in Critically-Ill Patients_** is an ongoing research project from the University of Alberta  
+* This program is for experimental use only  
+* For more info about the AAS project see: https://www.artsrn.ualberta.ca/fwa_mediawiki/index.php/Autonomous_Adaptive_Soundscape_project  
+* For installation instructions or to participate in the study please contact me: hmarcand@ualberta.ca
