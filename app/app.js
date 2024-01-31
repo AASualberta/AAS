@@ -315,9 +315,9 @@ async function stop(fromTimeout){
   else{
     sessionTime = timer.getSessionTime();
   }
-  var str = Date.now()+'; Action: exiting; Session lenght: '+sessionTime+'\n';
+  var totalTime = db.updateTime(user, sessionTime);
+  var str = Date.now()+'; Action: exiting; Session lenght: '+sessionTime+' - Total time: '+totalTime+'\n';
   fs.appendFileSync(logfile, str);
-  db.updateTime(user, sessionTime);
   seleniumtest.close(fromTimeout);
 }
 

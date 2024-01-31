@@ -41,6 +41,7 @@ class Database {
 		.find({ name: name})
 		.assign({totaltime: newTime})
 		.write()
+		return newTime;
 	}
 
 	findTime(name){
