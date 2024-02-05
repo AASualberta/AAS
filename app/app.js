@@ -642,6 +642,7 @@ var ComplexTimer = function(callback) {
   var shortTime = 75000; // 1.25 minutes
   var iota = 285000; // 4.75 minutes
   var lastStart = Date.now();
+  var totalTime = 0;
   
   this.startIota = function(){
     if (timerId){
@@ -678,7 +679,7 @@ var ComplexTimer = function(callback) {
     clearTimeout(timerId);
     let str = Date.now()+ "; Action: pause\n";
     fs.appendFileSync(logfile, str);
-    total += Date.now() - lastStart; // update time spent in training
+    totalTime += Date.now() - lastStart; // update time spent in training
   };
 
   this.resume = async function() {
@@ -740,14 +741,15 @@ var ComplexTimer = function(callback) {
   }
 
   this.getSessionTime = function(){
-    total += Date.now() - lastStart; // update time spent in training
-    return total;
+    totalTime += Date.now() - lastStart; // update time spent in training
+    return totalTime;
   }
 };
 
 var SimpleTimer = function(callback) {
   var lastStart = Date.now();
   var timerId;
+  var totalTime = 0;
 
   this.start = function(){
     if (timerId){
@@ -758,8 +760,8 @@ var SimpleTimer = function(callback) {
   }
     
   this.getSessionTime = function(){
-    total += Date.now() - lastStart; // update time spent in training
-    return total;
+    totalTime += Date.now() - lastStart; // update time spent in training
+    return totalTime;
   }
 };
 
