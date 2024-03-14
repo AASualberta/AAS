@@ -695,7 +695,7 @@ var ComplexTimer = function(callback) {
         callbackfn();
       }, delta);
     }, iota);
-    lastStart = Date.now();  
+    lastStart = Date.now();
   };
 
   this.next = function() {
@@ -741,8 +741,7 @@ var ComplexTimer = function(callback) {
   }
 
   this.getSessionTime = function(){
-    totalTime += Date.now() - lastStart; // update time spent in training
-    return totalTime;
+    return totalTime + (Date.now() - lastStart);
   }
 };
 
@@ -760,8 +759,7 @@ var SimpleTimer = function(callback) {
   }
     
   this.getSessionTime = function(){
-    totalTime += Date.now() - lastStart; // update time spent in training
-    return totalTime;
+    return totalTime + (Date.now() - lastStart);
   }
 };
 
